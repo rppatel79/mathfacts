@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Math Practice</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #question-container { margin-top: 20px; }
+        #scoreboard { margin-top: 10px; }
+    </style>
+</head>
+<body>
+<h1>Math Practice</h1>
+
+<label for="level">Select Level:</label>
+<select id="level">
+    <option value="1">Level 1</option>
+    <option value="2">Level 2</option>
+    <option value="3">Level 3</option>
+</select>
+<button onclick="getQuestion()">Get Question</button>
+
+<div id="question-container">
+    <p id="question"></p>
+    <input type="number" id="answer" placeholder="Your answer">
+    <button onclick="submitAnswer()">Submit</button>
+</div>
+
+<div id="scoreboard">
+    <p id="result"></p>
+    <p id="score">Score: 0 / 0</p>
+    <p id="streak">Streak: 0</p>
+    <p id="timer">⏱️ Time: 0s</p>
+    <button onclick="clearScore()">Clear Score</button>
+</div>
+
+<!-- Sound effects -->
+<!-- Success Sound -->
+<audio id="success-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_1f6d40e1f2.mp3?filename=correct-answer-1-1f6d40e1f2.mp3" preload="auto"></audio>
+<audio id="incorrect-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_095021d8f5.mp3?filename=error-1-095021d8f5.mp3" preload="auto"></audio>
+<audio id="streak-sound" src="https://cdn.pixabay.com/download/audio/2022/06/23/audio_50f336e875.mp3?filename=success-fanfare-trumpets-6185.mp3" preload="auto"></audio>
+
+<script>
+    let currentQuestion = {};
+    let total = 0;
+    let correct = 0;
+    let streak = 0;
+    let timer = 0;
+    let timerInterval;
+
+    const correctSound = document.getElementById('correct-sound');
+    const incorrectSound = document.getElementById('incorrect-sound');
+    const streakSound = document.getElementById('streak-sound');
+
+    async function getQuestion() {
+      const level = document.getElementById('level').value;
+      const res = await fetch(`/api/math/question?level=${level}`);
+      const data = await res.json();
+      currentQuestion = { a: data.a, b: data.b };
+      document.getElementById('question').innerText = `What is ${data.a} x ${data.b}?`;
+      document.getElementById('result').innerText = '';
+      document.getElementById('answer').value = '';
+      document.getElementById('answer').focus();
+      resetTimer();
+    }
+
+    async function submitAnswer() {
+      const answerInput = document.getElementById('answer');
+      const answer = parseInt(answerInput.value, 10);
+      answerInput.value = '';
+
+      if (isNaN(answer)) return;
+
+      const res = await fetch('/api/math/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...currentQuestion, answer })
+      });
+
+      const result = await res.json();
+      total++;
+      stopTimer();
+
+      if (result.correct) {
+        correct++;
+        streak++;
+        correctSound.play();
+
+        if (streak > 0 && streak % 5 === 0) {
+          streakSound.play();
+        }
+
+        document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
+      } else {
+        incorrectSound.play();
+        streak = 0;
+        document.getElementById('result').innerText =
+          `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
+      }
+
+      updateScoreboard();
+    }
+
+    function updateScoreboard() {
+      document.getElementById('score').innerText = `Score: ${correct} / ${total}`;
+      document.getElementById('streak').innerText = `Streak: ${streak}`;
+    }
+
+    function clearScore() {
+      total = 0;
+      correct = 0;
+      streak = 0;
+      updateScoreboard();
+    }
+
+    function resetTimer() {
+      stopTimer();
+      timer = 0;
+      document.getElementById('timer').innerText = `⏱️ Time: ${timer}s`;
+      timerInterval = setInterval(() => {
+        timer++;
+        document.getElementById('timer').innerText = `⏱️ Time: ${timer}s`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+    }
+
+    // ⌨️ Submit on Enter key
+    document.getElementById('answer').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        submitAnswer();
+      }
+    });
+
+</script>
+</body>
+</html>

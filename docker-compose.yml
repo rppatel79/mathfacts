@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: math_practice_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mathdb
+      POSTGRES_USER: mathuser
+      POSTGRES_PASSWORD: mathpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
