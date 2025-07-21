@@ -13,6 +13,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class Student {
 
@@ -23,9 +24,6 @@ public class Student {
     private String name;
 
     private String level;
-
-    // Constructors
-    public Student() {}
 
 
 }
