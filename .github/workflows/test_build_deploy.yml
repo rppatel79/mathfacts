@@ -46,6 +46,9 @@ jobs:
           echo "IMAGE_TAG=latest" >> $GITHUB_ENV
           echo "ECR_URI=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}" >> $GITHUB_ENV
 
+      - name: Build with Maven
+        run: mvn clean package
+
       - name: Build Docker image
         run: |
           docker build -t $ECR_URI:$IMAGE_TAG .
