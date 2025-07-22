@@ -2,7 +2,7 @@ spring:
   application:
     name: mathfacts
   datasource:
-    url: jdbc:postgresql://localhost:5432/mathdb
+    url: jdbc:postgresql://db:5432/mathdb
     username: mathuser
     password: mathpass
   jpa:
