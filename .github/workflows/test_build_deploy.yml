@@ -60,7 +60,7 @@ jobs:
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ecs/mathfacts_task.json
+          task-definition: mathfacts_task.json
           service: mathfacts-service
           cluster: mathfacts
           wait-for-service-stability: true
