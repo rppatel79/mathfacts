@@ -61,6 +61,6 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.4
         with:
           task-definition: .github/workflows/ecs/mathfacts_task.json
-          service-name: mathfacts-service
-          cluster-name: mathfacts
+          service: mathfacts-service
+          cluster: mathfacts
           wait-for-service-stability: true
