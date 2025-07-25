@@ -58,9 +58,9 @@ jobs:
           docker push $ECR_URI:$IMAGE_TAG
 
       - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v3.0.0
         with:
           task-definition: .github/workflows/ecs/mathfacts_task.json
-          service: mathfacts-service
-          cluster: mathfacts
+          service-name: mathfacts-service
+          cluster-name: mathfacts
           wait-for-service-stability: true
