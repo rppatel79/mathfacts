@@ -19,6 +19,24 @@
       "mountPoints": [],
       "volumesFrom": [],
       "ulimits": [],
+      "secrets": [
+        {
+          "name": "spring.datasource.url",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:541752449603:secret:mathfacts/prod/database-O3epiA:spring.datasource.url::"
+        },
+        {
+          "name": "spring.datasource.username",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:541752449603:secret:mathfacts/prod/database-O3epiA:spring.datasource.username::"
+        },
+        {
+          "name": "spring.datasource.password",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:541752449603:secret:mathfacts/prod/database-O3epiA:spring.datasource.password::"
+        },
+        {
+          "name": "spring.datasource.driver-class-name",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:541752449603:secret:mathfacts/prod/database-O3epiA:driver-class-name::"
+        }
+      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -37,9 +55,6 @@
   "networkMode": "awsvpc",
   "volumes": [],
   "placementConstraints": [],
-  "compatibilities": [
-    "FARGATE"
-  ],
   "requiresCompatibilities": [
     "FARGATE"
   ],
