@@ -34,7 +34,7 @@
         },
         {
           "name": "spring.datasource.driver-class-name",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:541752449603:secret:mathfacts/prod/database-O3epiA:driver-class-name::"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:541752449603:secret:mathfacts/prod/database-O3epiA:spring.datasource.driver-class-name::"
         }
       ],
       "logConfiguration": {
