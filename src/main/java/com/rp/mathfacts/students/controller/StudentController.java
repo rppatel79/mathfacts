@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -34,4 +35,8 @@ public class StudentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedStudent);
     }
 
+    @GetMapping
+    public ResponseEntity<List<Student>> list() {
+        return ResponseEntity.ok(studentService.getAllStudents());
+    }
 }
