@@ -2,143 +2,103 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Math Practice</title>
+    <title>Select or Create Student</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        #question-container { margin-top: 20px; }
-        #scoreboard { margin-top: 10px; }
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+        label { display: block; margin-top: 15px; }
+        button { margin-top: 20px; padding: 10px 20px; }
+        .divider { margin: 20px 0; border-top: 1px solid #ccc; }
     </style>
 </head>
 <body>
-<h1>Math Practice</h1>
 
-<label for="level">Select Level:</label>
-<select id="level">
-    <option value="1">Level 1</option>
-    <option value="2">Level 2</option>
-    <option value="3">Level 3</option>
+<h1>Math Facts – Choose Student</h1>
+
+<!-- Existing Student Dropdown -->
+<label for="existing-student">Select an existing student:</label>
+<select id="existing-student" onchange="toggleNewStudentFields()">
+    <option value="">-- None --</option>
 </select>
-<button onclick="getQuestion()">Get Question</button>
 
-<div id="question-container">
-    <p id="question"></p>
-    <input type="number" id="answer" placeholder="Your answer">
-    <button id="submit-btn" onclick="submitAnswer()" disabled>Submit</button>
+<div class="divider"></div>
+
+<!-- New Student Fields -->
+<div id="new-student-fields">
+    <label for="new-student-name">New student name:</label>
+    <input type="text" id="new-student-name" placeholder="Enter name">
+
+    <label for="new-student-level">Level:</label>
+    <select id="new-student-level">
+        <option value="">-- Select level --</option>
+        <option value="1">Level 1</option>
+        <option value="2">Level 2</option>
+        <option value="3">Level 3</option>
+    </select>
 </div>
 
-<div id="scoreboard">
-    <p id="result"></p>
-    <p id="score">Score: 0 / 0</p>
-    <p id="streak">Streak: 0</p>
-    <p id="timer">⏱️ Time: 0s</p>
-    <button id="clear-score-btn" onclick="clearScore()" disabled>Clear Score</button>
-</div>
-
-<!-- Sound effects -->
-<audio id="success-sound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
-<audio id="incorrect-sound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
-<audio id="streak-sound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
+<button onclick="continueToTest()">Continue</button>
 
 <script>
-    let currentQuestion = {};
-    let total = 0;
-    let correct = 0;
-    let streak = 0;
-    let timer = 0;
-    let timerInterval;
+    async function fetchStudents() {
+      try {
+        const res = await fetch('/students');
+        if (!res.ok) throw new Error("Failed to load students");
 
-    const correctSound = document.getElementById('success-sound');
-    const incorrectSound = document.getElementById('incorrect-sound');
-    const streakSound = document.getElementById('streak-sound');
-    const submitBtn = document.getElementById('submit-btn');
-    const clearScoreBtn = document.getElementById('clear-score-btn');
-
-    async function getQuestion() {
-      const level = document.getElementById('level').value;
-      const res = await fetch(`/api/math/question?level=${level}`);
-      const data = await res.json();
-      currentQuestion = { a: data.a, b: data.b };
-      document.getElementById('question').innerText = `What is ${data.a} x ${data.b}?`;
-      document.getElementById('result').innerText = '';
-      document.getElementById('answer').value = '';
-      document.getElementById('answer').focus();
-      submitBtn.disabled = false;
-      clearScoreBtn.disabled = false;
-      resetTimer();
+        const students = await res.json();
+        const select = document.getElementById('existing-student');
+        students.forEach(student => {
+          const opt = document.createElement('option');
+          opt.value = student.id;
+          opt.textContent = `${student.name} (Level ${student.level})`;
+          select.appendChild(opt);
+        });
+      } catch (error) {
+        alert("Error fetching students: " + error.message);
+      }
     }
 
-    async function submitAnswer() {
-      const answerInput = document.getElementById('answer');
-      const answer = parseInt(answerInput.value, 10);
-      answerInput.value = '';
+    async function continueToTest() {
+      const selectedId = document.getElementById('existing-student').value;
+      const newName = document.getElementById('new-student-name').value.trim();
+      const newLevel = document.getElementById('new-student-level').value;
 
-      if (isNaN(answer)) return;
-
-      const res = await fetch('/api/math/answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...currentQuestion, answer })
-      });
-
-      const result = await res.json();
-      total++;
-      stopTimer();
-
-      if (result.correct) {
-        correct++;
-        streak++;
-        correctSound.play();
-
-        if (streak > 0 && streak % 5 === 0) {
-          streakSound.play();
-        }
-
-        document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
-      } else {
-        incorrectSound.play();
-        streak = 0;
-        document.getElementById('result').innerText =
-          `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
+      // Use existing student
+      if (selectedId) {
+        window.location.href = `/test.html?studentId=${selectedId}`;
+        return;
       }
 
-      updateScoreboard();
-
-      // Automatically fetch next question
-      setTimeout(getQuestion, 800);
-    }
-
-    function updateScoreboard() {
-      document.getElementById('score').innerText = `Score: ${correct} / ${total}`;
-      document.getElementById('streak').innerText = `Streak: ${streak}`;
-    }
-
-    function clearScore() {
-      total = 0;
-      correct = 0;
-      streak = 0;
-      updateScoreboard();
-    }
-
-    function resetTimer() {
-      stopTimer();
-      timer = 0;
-      document.getElementById('timer').innerText = `⏱️ Time: ${timer}s`;
-      timerInterval = setInterval(() => {
-        timer++;
-        document.getElementById('timer').innerText = `⏱️ Time: ${timer}s`;
-      }, 1000);
-    }
-
-    function stopTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-    }
-
-    // Submit on Enter key
-    document.getElementById('answer').addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        submitAnswer();
+      // Create new student
+      if (!newName || !newLevel) {
+        alert("Please enter both name and level.");
+        return;
       }
-    });
+
+      try {
+        const res = await fetch('/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName, level: newLevel })
+        });
+
+        if (!res.ok) throw new Error("Failed to create student");
+
+        const newStudent = await res.json();
+        window.location.href = `/test.html?studentId=${newStudent.id}`;
+      } catch (error) {
+        alert("Error creating student: " + error.message);
+      }
+    }
+
+    function toggleNewStudentFields() {
+      const selected = document.getElementById('existing-student').value;
+      document.getElementById('new-student-fields').style.display = selected ? 'none' : 'block';
+    }
+
+    // Initial Setup
+    fetchStudents();
+    toggleNewStudentFields();
 </script>
+
 </body>
 </html>
