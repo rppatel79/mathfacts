@@ -23,7 +23,7 @@
 <div id="question-container">
     <p id="question"></p>
     <input type="number" id="answer" placeholder="Your answer">
-    <button onclick="submitAnswer()">Submit</button>
+    <button id="submit-btn" onclick="submitAnswer()" disabled>Submit</button>
 </div>
 
 <div id="scoreboard">
@@ -31,14 +31,13 @@
     <p id="score">Score: 0 / 0</p>
     <p id="streak">Streak: 0</p>
     <p id="timer">⏱️ Time: 0s</p>
-    <button onclick="clearScore()">Clear Score</button>
+    <button id="clear-score-btn" onclick="clearScore()" disabled>Clear Score</button>
 </div>
 
 <!-- Sound effects -->
-<!-- Success Sound -->
-<audio id="success-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_1f6d40e1f2.mp3?filename=correct-answer-1-1f6d40e1f2.mp3" preload="auto"></audio>
-<audio id="incorrect-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_095021d8f5.mp3?filename=error-1-095021d8f5.mp3" preload="auto"></audio>
-<audio id="streak-sound" src="https://cdn.pixabay.com/download/audio/2022/06/23/audio_50f336e875.mp3?filename=success-fanfare-trumpets-6185.mp3" preload="auto"></audio>
+<audio id="success-sound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
+<audio id="incorrect-sound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
+<audio id="streak-sound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
 
 <script>
     let currentQuestion = {};
@@ -48,9 +47,11 @@
     let timer = 0;
     let timerInterval;
 
-    const correctSound = document.getElementById('correct-sound');
+    const correctSound = document.getElementById('success-sound');
     const incorrectSound = document.getElementById('incorrect-sound');
     const streakSound = document.getElementById('streak-sound');
+    const submitBtn = document.getElementById('submit-btn');
+    const clearScoreBtn = document.getElementById('clear-score-btn');
 
     async function getQuestion() {
       const level = document.getElementById('level').value;
@@ -61,6 +62,8 @@
       document.getElementById('result').innerText = '';
       document.getElementById('answer').value = '';
       document.getElementById('answer').focus();
+      submitBtn.disabled = false;
+      clearScoreBtn.disabled = false;
       resetTimer();
     }
 
@@ -99,6 +102,9 @@
       }
 
       updateScoreboard();
+
+      // Automatically fetch next question
+      setTimeout(getQuestion, 800);
     }
 
     function updateScoreboard() {
@@ -127,13 +133,12 @@
       if (timerInterval) clearInterval(timerInterval);
     }
 
-    // ⌨️ Submit on Enter key
+    // Submit on Enter key
     document.getElementById('answer').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
         submitAnswer();
       }
     });
-
 </script>
 </body>
 </html>
