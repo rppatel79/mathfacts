@@ -1,11 +1,11 @@
 package com.rp.mathfacts.students.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -23,7 +23,6 @@ public class Student {
 
     private String name;
 
-    private String level;
-
-
+    @Convert(converter = TestLevelMapConverter.class)
+    private Map<TestType, Level> testTypeToLevel = new HashMap<>();
 }
