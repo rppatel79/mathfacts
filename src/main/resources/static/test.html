@@ -36,23 +36,23 @@
 <!-- Sound effects -->
 <audio id="success-sound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
 <audio id="incorrect-sound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
-<audio id="streak-sound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
+<audio id="levelup-sound" src="https://www.soundjay.com/misc/sounds/button-2.mp3" preload="auto"></audio>
 
 <script>
     let currentQuestion = {};
     let total = 0;
     let correct = 0;
+    let incorrect = 0;
     let streak = 0;
     let timer = 0;
     let timerInterval;
 
     const correctSound = document.getElementById('success-sound');
     const incorrectSound = document.getElementById('incorrect-sound');
-    const streakSound = document.getElementById('streak-sound');
+    const levelUpSound = document.getElementById('levelup-sound');
     const submitBtn = document.getElementById('submit-btn');
     const clearScoreBtn = document.getElementById('clear-score-btn');
 
-    // Get studentId from query string
     const urlParams = new URLSearchParams(window.location.search);
     const studentId = urlParams.get('studentId');
 
@@ -67,14 +67,8 @@
         if (!res.ok) throw new Error("Student not found");
 
         const student = await res.json();
-
-        // Update title with student name
-        const title = document.querySelector('h1');
-        title.innerText = `Math Practice – ${student.name}`;
-
-        // Set level based on student
-        const levelSelect = document.getElementById('level');
-        levelSelect.value = student.level;
+        document.querySelector('h1').innerText = `Math Practice – ${student.name}`;
+        document.getElementById('level').value = student.level;
 
       } catch (error) {
         alert("Error loading student: " + error.message);
@@ -117,20 +111,54 @@
         streak++;
         correctSound.play();
 
-        if (streak > 0 && streak % 5 === 0) {
-          streakSound.play();
+        document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
+
+        if (streak % 10 === 0) {
+          incorrect =0;
+          levelUp();
         }
 
-        document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
       } else {
+        incorrect++;
+        streak = 0;  // only reset on incorrect
         incorrectSound.play();
-        streak = 0;
         document.getElementById('result').innerText =
           `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
+
+        if (incorrect >= 4) {
+          levelDown();
+          incorrect = 0;
+        }
       }
 
       updateScoreboard();
       setTimeout(getQuestion, 800);
+    }
+
+    function levelUp() {
+      const levelSelect = document.getElementById('level');
+      let currentLevel = parseInt(levelSelect.value);
+      if (currentLevel < 3) {
+        currentLevel++;
+        levelSelect.value = currentLevel;
+        document.getElementById('result').innerText += ` 🎉 Level up to ${currentLevel}!`;
+        levelUpSound.play();
+      } else {
+        document.getElementById('result').innerText += ` 🏆 You win!`;
+        levelUpSound.play();
+      }
+    }
+
+    function levelDown() {
+      const levelSelect = document.getElementById('level');
+      let currentLevel = parseInt(levelSelect.value);
+      if (currentLevel > 1) {
+        currentLevel--;
+        levelSelect.value = currentLevel;
+        document.getElementById('result').innerText += ` ⚠️ Level down to ${currentLevel}`;
+      } else {
+        document.getElementById('result').innerText += ` ⚠️ Still at Level 1`;
+      }
     }
 
     function updateScoreboard() {
@@ -141,6 +169,7 @@
     function clearScore() {
       total = 0;
       correct = 0;
+      incorrect = 0;
       streak = 0;
       updateScoreboard();
     }
@@ -159,14 +188,12 @@
       if (timerInterval) clearInterval(timerInterval);
     }
 
-    // Submit on Enter key
     document.getElementById('answer').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
         submitAnswer();
       }
     });
 
-    // Load student when page starts
     loadStudent();
 </script>
 </body>
