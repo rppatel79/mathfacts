@@ -6,8 +6,8 @@ import lombok.Getter;
 public enum TestType {
     ADDITION('+'),
     SUBTRACTION('-'),
-    MULTIPLICATION('*'),
-    DIVISION('/');
+    MULTIPLICATION('x'),
+    DIVISION('÷');
 
     private final char symbol;
     TestType(char symbol)

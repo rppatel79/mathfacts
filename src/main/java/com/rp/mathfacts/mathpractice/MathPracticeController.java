@@ -1,5 +1,7 @@
 package com.rp.mathfacts.mathpractice;
 
+import com.rp.mathfacts.students.entity.Level;
+import com.rp.mathfacts.students.entity.TestType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,19 +14,19 @@ public class MathPracticeController {
     private final Random random = new Random();
 
     @GetMapping("/question")
-    public ResponseEntity<Map<String, Object>> getQuestion(@RequestParam String level) {
+    public ResponseEntity<Map<String, Object>> getQuestion(@RequestParam Level level, @RequestParam TestType testType) {
         int base = switch (level) {
-            case "1" -> 5;
-            case "2" -> 10;
-            case "3" -> 12;
-            default -> 5;
+            case BEGINNER -> 5;
+            case INTERMEDIATE -> 10;
+            case ADVANCED -> 12;
         };
         int a = random.nextInt(base) + 1;
         int b = random.nextInt(base) + 1;
         return ResponseEntity.ok(Map.of(
                 "a", a,
                 "b", b,
-                "question", a + " x " + b
+                "testType",testType,
+                "question", a +" "+ testType.getSymbol()  +" "+ b
         ));
     }
 
@@ -33,10 +35,21 @@ public class MathPracticeController {
         int a = (int) payload.get("a");
         int b = (int) payload.get("b");
         int answer = (int) payload.get("answer");
-        boolean correct = a * b == answer;
+
+        String typeStr = (String) payload.get("testType");
+        TestType testType = TestType.valueOf(typeStr);
+
+        int expected = switch (testType) {
+            case ADDITION -> a + b;
+            case SUBTRACTION -> a - b;
+            case MULTIPLICATION -> a * b;
+            case DIVISION -> a / b; // optional: handle divide by zero / rounding
+        };
+
+        boolean correct =expected == answer;
         return ResponseEntity.ok(Map.of(
                 "correct", correct,
-                "expected", a * b
+                "expected", expected
         ));
     }
 }
