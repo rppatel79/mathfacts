@@ -113,64 +113,71 @@ async function getQuestion() {
   resetTimer();
 }
 
-    async function submitAnswer() {
-      const answerInput = document.getElementById('answer');
-      const answer = parseInt(answerInput.value, 10);
-      answerInput.value = '';
+async function submitAnswer() {
+  const answerInput = document.getElementById('answer');
+  const answer = parseInt(answerInput.value, 10);
+  answerInput.value = '';
 
-      if (isNaN(answer)) return;
+  if (isNaN(answer)) return;
 
-      const res = await fetch('/api/math/answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...currentQuestion, answer })
-      });
+  const res = await fetch('/api/math/answer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...currentQuestion, answer })
+  });
 
-      const result = await res.json();
-      total++;
-      stopTimer();
+  const result = await res.json();
+  total++;
+  stopTimer();
 
-      if (result.correct) {
-        correct++;
-        streak++;
-        correctSound.play();
+  let allTestsFinished = false;
 
-        document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
+  if (result.correct) {
+    correct++;
+    streak++;
+    correctSound.play();
+    document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
 
-        if (streak % 2 === 0) {
-          incorrect =0;
-          levelUp();
-        }
-
-      } else {
-        incorrect++;
-        streak = 0;  // only reset on incorrect
-        incorrectSound.play();
-        document.getElementById('result').innerText =
-          `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
-
-        if (incorrect >= 4) {
-          levelDown();
-          incorrect = 0;
-        }
-      }
-
-      updateScoreboard();
-      setTimeout(getQuestion, 800);
+    if (streak % 2 === 0) {
+      incorrect = 0;
+      allTestsFinished = levelUp();
     }
+  } else {
+    incorrect++;
+    streak = 0;
+    incorrectSound.play();
+    document.getElementById('result').innerText =
+      `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
+
+    if (incorrect >= 4) {
+      levelDown();
+      incorrect = 0;
+    }
+  }
+
+  updateScoreboard();
+
+  // Stop further input if finished
+  if (allTestsFinished || currentQuestion === null) {
+    submitBtn.disabled = true;
+    document.getElementById('answer').disabled = true;
+    return;
+  }
+
+  setTimeout(getQuestion, 800);
+}
 
 function levelUp() {
   const levelSelect = document.getElementById('level');
   let currentLevel = parseInt(levelSelect.value);
 
   if (currentLevel < 3) {
-    // Level up within current test type
     currentLevel++;
     levelSelect.value = currentLevel;
     document.getElementById('result').innerText += ` 🎉 Level up to ${currentLevel}!`;
     levelUpSound.play();
+    return false;
   } else {
-    // Move to next test type
     const testTypeKeys = Object.keys(testTypeMap);
     const currentIndex = testTypeKeys.indexOf(currentTestType);
 
@@ -178,17 +185,20 @@ function levelUp() {
       currentTestType = testTypeKeys[currentIndex + 1];
       currentLevelEnum = testTypeMap[currentTestType];
       levelSelect.value = levelDisplayMap[currentLevelEnum];
-
       document.getElementById('result').innerText += ` 🚀 Moving to next test: ${currentTestType} (Level ${currentLevelEnum})`;
       levelUpSound.play();
+      return false;
     } else {
-      // No more test types
       document.getElementById('result').innerText += ` 🏆 You finished all tests!`;
       levelUpSound.play();
+      stopTimer();
+      submitBtn.disabled = true;
+      document.getElementById('answer').disabled = true; // Disable input
+      currentQuestion = null;
+      return true;
     }
   }
 }
-
 
     function levelDown() {
       const levelSelect = document.getElementById('level');
