@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rp.mathfacts.students.entity.Level;
 import com.rp.mathfacts.students.entity.Student;
+import com.rp.mathfacts.students.entity.StudentSession;
 import com.rp.mathfacts.students.entity.TestType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -119,19 +120,23 @@ public class StudentControllerTest {
         UUID studentId = createdStudent.getId();
 
         // Modify and PUT update
-        createdStudent.setCorrectStreak(2);
-        createdStudent.setIncorrectStreak(1);
-        createdStudent.getTestTypeToLevel().put(TestType.MULTIPLICATION, Level.INTERMEDIATE);
-
+        var session = StudentSession.builder()
+                .correctStreak(2)
+                .incorrectStreak(1)
+                .testType(TestType.MULTIPLICATION)
+                .level(1)
+                .build();
+        createdStudent.setSession(session);
         String updatedJson = objectMapper.writeValueAsString(createdStudent);
 
         mockMvc.perform(put("/students/" + studentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatedJson))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.correctStreak").value(2))
-                .andExpect(jsonPath("$.incorrectStreak").value(1))
-                .andExpect(jsonPath("$.testTypeToLevel.MULTIPLICATION").value("INTERMEDIATE"));
+                .andExpect(jsonPath("$.session.correctStreak").value(2))
+                .andExpect(jsonPath("$.session.incorrectStreak").value(1))
+                .andExpect(jsonPath("$.session.testType").value(TestType.MULTIPLICATION.name()))
+                .andExpect(jsonPath("$.session.level").value(1));
     }
 
 }
