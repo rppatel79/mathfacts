@@ -50,8 +50,9 @@ public class StudentController {
         // Preserve immutable fields like ID
         updatedStudent.setId(id);
 
-        // Update in DB
-        Student saved = studentService.updateStudent(updatedStudent);
+        Student merged = StudentService.mergeStudent(existing, updatedStudent);
+        Student saved = studentService.updateStudent(merged);
+
         return ResponseEntity.ok(saved);
     }
 

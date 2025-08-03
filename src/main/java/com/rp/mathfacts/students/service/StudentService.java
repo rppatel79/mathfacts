@@ -35,4 +35,20 @@ public class StudentService {
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
     }
+
+    public static Student mergeStudent(Student existing, Student incoming) {
+        if (incoming.getName() != null) {
+            existing.setName(incoming.getName());
+        }
+
+        if (incoming.getTestTypeToLevel() != null) {
+            existing.setTestTypeToLevel(incoming.getTestTypeToLevel());
+        }
+
+        if (incoming.getSession() != null) {
+            existing.setSession(incoming.getSession());
+        }
+
+        return existing;
+    }
 }

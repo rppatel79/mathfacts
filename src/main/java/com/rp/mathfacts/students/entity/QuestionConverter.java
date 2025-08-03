@@ -25,8 +25,7 @@ public class QuestionConverter implements AttributeConverter<Question, String> {
     public Question convertToEntityAttribute(String dbData) {
         if (dbData == null || dbData.isEmpty()) return null;
         try {
-            return mapper.readValue(dbData, new TypeReference<>() {
-            });
+            return mapper.readValue(dbData, Question.class);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Error reading JSON to map", e);
         }

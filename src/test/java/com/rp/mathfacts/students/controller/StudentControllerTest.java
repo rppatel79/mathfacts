@@ -119,24 +119,33 @@ public class StudentControllerTest {
         Student createdStudent = objectMapper.readValue(postResult.getResponse().getContentAsString(), Student.class);
         UUID studentId = createdStudent.getId();
 
-        // Modify and PUT update
-        var session = StudentSession.builder()
+        // Modify session only
+        StudentSession session = StudentSession.builder()
                 .correctStreak(2)
                 .incorrectStreak(1)
                 .testType(TestType.MULTIPLICATION)
-                .level(1)
+                .level(Level.BEGINNER)
                 .build();
-        createdStudent.setSession(session);
-        String updatedJson = objectMapper.writeValueAsString(createdStudent);
 
-        mockMvc.perform(put("/students/" + studentId)
+        Student partialUpdate = new Student(); // empty object to avoid unintentionally nulling fields
+        partialUpdate.setSession(session);
+
+        String updatedJson = objectMapper.writeValueAsString(partialUpdate);
+
+        // PUT the update (only session data)
+        MvcResult putResult = mockMvc.perform(put("/students/" + studentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatedJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.session.correctStreak").value(2))
                 .andExpect(jsonPath("$.session.incorrectStreak").value(1))
                 .andExpect(jsonPath("$.session.testType").value(TestType.MULTIPLICATION.name()))
-                .andExpect(jsonPath("$.session.level").value(1));
+                .andExpect(jsonPath("$.session.level").value(Level.BEGINNER.name()))
+                // Ensure other fields are still intact (i.e., not overwritten)
+                .andExpect(jsonPath("$.name").value("Original Name"))
+                .andExpect(jsonPath("$.testTypeToLevel.SUBTRACTION").value("BEGINNER"))
+                .andReturn();
     }
+
 
 }

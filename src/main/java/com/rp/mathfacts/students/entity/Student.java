@@ -24,7 +24,7 @@ public class Student {
     private String name;
 
     @Convert(converter = TestLevelMapConverter.class)
-    private Map<TestType, Level> testTypeToLevel = new HashMap<>();
+    private Map<TestType, Level> testTypeToLevel;
 
     @Embedded
     private StudentSession session;

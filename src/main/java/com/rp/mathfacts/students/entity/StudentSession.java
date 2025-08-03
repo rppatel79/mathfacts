@@ -11,10 +11,10 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class StudentSession {
-    private int level;
+    private Level level;
     private TestType testType;
-    private int correctStreak;
-    private int incorrectStreak;
+    private int correctStreak=0;
+    private int incorrectStreak=0;
 
     @Convert(converter =  QuestionConverter.class)
     private Question currentQuestion;

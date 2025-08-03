@@ -1,5 +1,6 @@
 package com.rp.mathfacts.students.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Getter;
 
 @Getter
@@ -14,5 +15,8 @@ public enum Level {
         this.level = level;
     }
 
-
+    @JsonCreator
+    public static Level fromString(String value) {
+        return Level.valueOf(value.toUpperCase());
+    }
 }
