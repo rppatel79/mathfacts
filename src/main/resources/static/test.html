@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Math Practice</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
@@ -17,7 +17,6 @@
     <option value="2">Level 2</option>
     <option value="3">Level 3</option>
 </select>
-<button onclick="getQuestion()">Get Question</button>
 
 <div id="question-container">
     <p id="question"></p>
@@ -40,165 +39,151 @@
 
 <script>
     let currentQuestion = {};
-    let total = 0;
-    let correct = 0;
-    let incorrect = 0;
-    let streak = 0;
-    let timer = 0;
+    let total = 0, correct = 0, incorrect = 0, streak = 0, timer = 0;
     let timerInterval;
     let currentTestType = null;
     let currentLevelEnum = null;
     let testTypeMap = {};
-    let levelDisplayMap=null;
-
+    let levelDisplayMap = null;
 
     const correctSound = document.getElementById('success-sound');
     const incorrectSound = document.getElementById('incorrect-sound');
     const levelUpSound = document.getElementById('levelup-sound');
     const submitBtn = document.getElementById('submit-btn');
     const clearScoreBtn = document.getElementById('clear-score-btn');
+    const answerInput = document.getElementById('answer');
 
     const urlParams = new URLSearchParams(window.location.search);
     const studentId = urlParams.get('studentId');
 
-async function loadStudent() {
-  if (!studentId) {
-    alert("Missing student ID. Please go back and select a student.");
-    return;
-  }
+    async function loadStudent() {
+      if (!studentId) {
+        alert("Missing student ID. Please go back and select a student.");
+        return;
+      }
 
-  try {
-    const res = await fetch(`/students/${studentId}`);
-    if (!res.ok) throw new Error("Student not found");
+      try {
+        const res = await fetch(`/students/${studentId}`);
+        if (!res.ok) throw new Error("Student not found");
 
-    const student = await res.json();
-    document.querySelector('h1').innerText = `Math Practice – ${student.name}`;
+        const student = await res.json();
+        document.querySelector('h1').innerText = `Math Practice – ${student.name}`;
 
-    testTypeMap = student.testTypeToLevel;
-    const testTypes = Object.keys(testTypeMap);
+        testTypeMap = student.testTypeToLevel;
+        const testTypes = Object.keys(testTypeMap);
+        if (testTypes.length === 0) {
+          alert("Student has no test types assigned.");
+          return;
+        }
 
+        currentTestType = testTypes[0];
+        currentLevelEnum = testTypeMap[currentTestType];
+        levelDisplayMap = { BEGINNER: 1, INTERMEDIATE: 2, ADVANCED: 3 };
+        document.getElementById('level').value = levelDisplayMap[currentLevelEnum] || 1;
 
-    if (testTypes.length === 0) {
-      alert("Student has no test types assigned.");
-      return;
+        await getQuestion(); // auto load first question
+
+      } catch (error) {
+        alert("Error loading student: " + error.message);
+      }
     }
 
-    currentTestType = testTypes[0];
-    currentLevelEnum = testTypeMap[currentTestType]; // e.g. "BEGINNER"
+    async function getQuestion() {
+      const res = await fetch(`/api/math/question?level=${currentLevelEnum}&testType=${currentTestType}`);
+      const data = await res.json();
 
-    // Update UI
-    levelDisplayMap = { BEGINNER: 1, INTERMEDIATE: 2, ADVANCED: 3 };
-    document.getElementById('level').value = levelDisplayMap[currentLevelEnum] || 1;
+      currentQuestion = {
+        a: data.a,
+        b: data.b,
+        testType: currentTestType
+      };
 
-  } catch (error) {
-    alert("Error loading student: " + error.message);
-  }
-}
-
-async function getQuestion() {
-  const res = await fetch(`/api/math/question?level=${currentLevelEnum}&testType=${currentTestType}`);
-  const data = await res.json();
-
-  currentQuestion = {
-    a: data.a,
-    b: data.b,
-    testType: currentTestType
-    };
-  document.getElementById('question').innerText = `What is ${data.question}?`;
-  document.getElementById('result').innerText = '';
-  document.getElementById('answer').value = '';
-  document.getElementById('answer').focus();
-  submitBtn.disabled = false;
-  clearScoreBtn.disabled = false;
-  resetTimer();
-}
-
-async function submitAnswer() {
-  const answerInput = document.getElementById('answer');
-  const answer = parseInt(answerInput.value, 10);
-  answerInput.value = '';
-
-  if (isNaN(answer)) return;
-
-  const res = await fetch('/api/math/answer', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...currentQuestion, answer })
-  });
-
-  const result = await res.json();
-  total++;
-  stopTimer();
-
-  let allTestsFinished = false;
-
-  if (result.correct) {
-    correct++;
-    streak++;
-    correctSound.play();
-    document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
-
-    if (streak % 2 === 0) {
-      incorrect = 0;
-      allTestsFinished = levelUp();
+      document.getElementById('question').innerText = `What is ${data.question}?`;
+      document.getElementById('result').innerText = '';
+      answerInput.value = '';
+      answerInput.disabled = false;
+      answerInput.focus();
+      submitBtn.disabled = false;
+      clearScoreBtn.disabled = false;
+      resetTimer();
     }
-  } else {
-    incorrect++;
-    streak = 0;
-    incorrectSound.play();
-    document.getElementById('result').innerText =
-      `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
 
-    if (incorrect >= 4) {
-      levelDown();
-      incorrect = 0;
-    }
-  }
+    async function submitAnswer() {
+      const answer = parseInt(answerInput.value, 10);
+      answerInput.value = '';
+      if (isNaN(answer)) return;
 
-  updateScoreboard();
+      const res = await fetch('/api/math/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...currentQuestion, answer })
+      });
 
-  // Stop further input if finished
-  if (allTestsFinished || currentQuestion === null) {
-    submitBtn.disabled = true;
-    document.getElementById('answer').disabled = true;
-    return;
-  }
-
-  setTimeout(getQuestion, 800);
-}
-
-function levelUp() {
-  const levelSelect = document.getElementById('level');
-  let currentLevel = parseInt(levelSelect.value);
-
-  if (currentLevel < 3) {
-    currentLevel++;
-    levelSelect.value = currentLevel;
-    document.getElementById('result').innerText += ` 🎉 Level up to ${currentLevel}!`;
-    levelUpSound.play();
-    return false;
-  } else {
-    const testTypeKeys = Object.keys(testTypeMap);
-    const currentIndex = testTypeKeys.indexOf(currentTestType);
-
-    if (currentIndex < testTypeKeys.length - 1) {
-      currentTestType = testTypeKeys[currentIndex + 1];
-      currentLevelEnum = testTypeMap[currentTestType];
-      levelSelect.value = levelDisplayMap[currentLevelEnum];
-      document.getElementById('result').innerText += ` 🚀 Moving to next test: ${currentTestType} (Level ${currentLevelEnum})`;
-      levelUpSound.play();
-      return false;
-    } else {
-      document.getElementById('result').innerText += ` 🏆 You finished all tests!`;
-      levelUpSound.play();
+      const result = await res.json();
+      total++;
       stopTimer();
-      submitBtn.disabled = true;
-      document.getElementById('answer').disabled = true; // Disable input
-      currentQuestion = null;
-      return true;
+
+      if (result.correct) {
+        correct++;
+        streak++;
+        correctSound.play();
+        document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
+
+        if (streak % 2 === 0) {
+          incorrect = 0;
+          const allTestsFinished = levelUp();
+          if (allTestsFinished) return;
+        }
+      } else {
+        incorrect++;
+        streak = 0;
+        incorrectSound.play();
+        document.getElementById('result').innerText = `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
+
+        if (incorrect >= 4) {
+          levelDown();
+          incorrect = 0;
+        }
+      }
+
+      updateScoreboard();
+      if (currentQuestion) {
+        setTimeout(getQuestion, 800);
+      }
     }
-  }
-}
+
+    function levelUp() {
+      const levelSelect = document.getElementById('level');
+      let currentLevel = parseInt(levelSelect.value);
+
+      if (currentLevel < 3) {
+        currentLevel++;
+        levelSelect.value = currentLevel;
+        document.getElementById('result').innerText += ` 🎉 Level up to ${currentLevel}!`;
+        levelUpSound.play();
+        return false;
+      } else {
+        const testTypeKeys = Object.keys(testTypeMap);
+        const currentIndex = testTypeKeys.indexOf(currentTestType);
+
+        if (currentIndex < testTypeKeys.length - 1) {
+          currentTestType = testTypeKeys[currentIndex + 1];
+          currentLevelEnum = testTypeMap[currentTestType];
+          levelSelect.value = levelDisplayMap[currentLevelEnum];
+          document.getElementById('result').innerText += ` 🚀 Moving to next test: ${currentTestType} (Level ${currentLevelEnum})`;
+          levelUpSound.play();
+          return false;
+        } else {
+          document.getElementById('result').innerText += ` 🏆 You finished all tests!`;
+          levelUpSound.play();
+          stopTimer();
+          submitBtn.disabled = true;
+          answerInput.disabled = true;
+          currentQuestion = null;
+          return true;
+        }
+      }
+    }
 
     function levelDown() {
       const levelSelect = document.getElementById('level');
@@ -239,7 +224,7 @@ function levelUp() {
       if (timerInterval) clearInterval(timerInterval);
     }
 
-    document.getElementById('answer').addEventListener('keypress', function (e) {
+    answerInput.addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
         submitAnswer();
       }

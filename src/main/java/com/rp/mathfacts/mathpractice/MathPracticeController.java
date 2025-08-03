@@ -1,6 +1,7 @@
 package com.rp.mathfacts.mathpractice;
 
 import com.rp.mathfacts.students.entity.Level;
+import com.rp.mathfacts.students.entity.Question;
 import com.rp.mathfacts.students.entity.TestType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,7 @@ public class MathPracticeController {
     private final Random random = new Random();
 
     @GetMapping("/question")
-    public ResponseEntity<Map<String, Object>> getQuestion(@RequestParam Level level, @RequestParam TestType testType) {
+    public ResponseEntity<Question> getQuestion(@RequestParam Level level, @RequestParam TestType testType) {
         int base = switch (level) {
             case BEGINNER -> 5;
             case INTERMEDIATE -> 10;
@@ -22,12 +23,9 @@ public class MathPracticeController {
         };
         int a = random.nextInt(base) + 1;
         int b = random.nextInt(base) + 1;
-        return ResponseEntity.ok(Map.of(
-                "a", a,
-                "b", b,
-                "testType",testType,
-                "question", a +" "+ testType.getSymbol()  +" "+ b
-        ));
+
+        Question question = new Question(a, b, testType, level);
+        return ResponseEntity.ok(question);
     }
 
     @PostMapping("/answer")

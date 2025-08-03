@@ -94,4 +94,44 @@ public class StudentControllerTest {
         assertThat(students).isNotEmpty();
         assertThat(students.stream().anyMatch(s -> "Jane Smith".equals(s.getName()))).isTrue();
     }
+
+    @Test
+    public void testUpdateStudent() throws Exception {
+        // Create student
+        Map<TestType, Level> initialMap = new EnumMap<>(TestType.class);
+        initialMap.put(TestType.SUBTRACTION, Level.BEGINNER);
+
+        Student student = Student.builder()
+                .name("Original Name")
+                .testTypeToLevel(initialMap)
+                .build();
+
+        String studentJson = objectMapper.writeValueAsString(student);
+
+        // POST to create
+        MvcResult postResult = mockMvc.perform(post("/students")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(studentJson))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Student createdStudent = objectMapper.readValue(postResult.getResponse().getContentAsString(), Student.class);
+        UUID studentId = createdStudent.getId();
+
+        // Modify and PUT update
+        createdStudent.setCorrectStreak(2);
+        createdStudent.setIncorrectStreak(1);
+        createdStudent.getTestTypeToLevel().put(TestType.MULTIPLICATION, Level.INTERMEDIATE);
+
+        String updatedJson = objectMapper.writeValueAsString(createdStudent);
+
+        mockMvc.perform(put("/students/" + studentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updatedJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctStreak").value(2))
+                .andExpect(jsonPath("$.incorrectStreak").value(1))
+                .andExpect(jsonPath("$.testTypeToLevel.MULTIPLICATION").value("INTERMEDIATE"));
+    }
+
 }

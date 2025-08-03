@@ -39,4 +39,20 @@ public class StudentController {
     public ResponseEntity<List<Student>> list() {
         return ResponseEntity.ok(studentService.getAllStudents());
     }
+
+    @PutMapping("{id}")
+    public ResponseEntity<Student> update(@PathVariable UUID id, @RequestBody Student updatedStudent) {
+        Student existing = studentService.getStudent(id);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Preserve immutable fields like ID
+        updatedStudent.setId(id);
+
+        // Update in DB
+        Student saved = studentService.updateStudent(updatedStudent);
+        return ResponseEntity.ok(saved);
+    }
+
 }

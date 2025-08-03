@@ -26,6 +26,12 @@ public class StudentService {
         studentRepository.deleteById(id);
     }
 
+    public Student updateStudent(Student s)
+    {
+        return studentRepository.save(s);
+    }
+
+
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
     }

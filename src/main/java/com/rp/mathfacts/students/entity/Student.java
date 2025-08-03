@@ -25,4 +25,12 @@ public class Student {
 
     @Convert(converter = TestLevelMapConverter.class)
     private Map<TestType, Level> testTypeToLevel = new HashMap<>();
+
+    private int level;
+    private TestType testType;
+    private int correctStreak;
+    private int incorrectStreak;
+
+    @Convert(converter =  QuestionConverter.class)
+    private Question currentQuestion;
 }
