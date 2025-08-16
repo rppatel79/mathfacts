@@ -103,7 +103,7 @@
 <button onclick="continueToTest()">Continue</button>
 
 <script>
-    const BEGINNER_LEVEL = "BEGINNER";
+    const STARTING_LEVEL = "ADVANCED";
 
     const hardcodedTestTypes = [
       "ADDITION",
@@ -177,7 +177,7 @@
 
       const testTypeToLevel = {};
       selectedTestTypes.forEach(tt => {
-        testTypeToLevel[tt] = BEGINNER_LEVEL;
+        testTypeToLevel[tt] = STARTING_LEVEL;
       });
 
       const student = {
