@@ -14,3 +14,11 @@ spring:
     console:
       path: /h2-console
       enabled: true
+  app:
+    aws:
+      region: us-east-1
+      s3Bucket: spelling-audio-rp
+      presignSeconds: 86400
+    polly:
+      voiceId: Joanna
+      engine: neural
