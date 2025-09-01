@@ -1,6 +1,5 @@
 package com.rp.mathfacts.spellingpractice.service;
 
-import com.rp.mathfacts.config.AppProps;
 import com.rp.mathfacts.config.AwsConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

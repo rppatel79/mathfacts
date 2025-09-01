@@ -103,7 +103,7 @@ class TextToSpeechServiceTest {
     }
 
     @Test
-    void synthesizePlain_propagatesExceptions() throws Exception {
+    void synthesizePlain_propagatesExceptions() {
         when(polly.synthesizeSpeech(any(SynthesizeSpeechRequest.class)))
                 .thenThrow(new RuntimeException("boom"));
 
@@ -111,7 +111,7 @@ class TextToSpeechServiceTest {
     }
 
     @Test
-    void synthesizeSsml_propagatesExceptions() throws Exception {
+    void synthesizeSsml_propagatesExceptions() {
         when(polly.synthesizeSpeech(any(SynthesizeSpeechRequest.class)))
                 .thenThrow(new RuntimeException("boom"));
 
