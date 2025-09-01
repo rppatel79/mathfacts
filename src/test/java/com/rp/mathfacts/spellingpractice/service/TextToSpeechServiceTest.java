@@ -28,25 +28,25 @@ class TextToSpeechServiceTest {
     private PollyClient polly;
 
     // Use whichever AppProps flavor matches your implementation.
-    // --- Variant A: props.polly().voiceId() style (from our earlier example)
+    // --- Variant A: props.getPolly().voiceId() style (from our earlier example)
     private AppProps props;
 
     private TextToSpeechService service;
 
     @BeforeEach
     void setUp() {
-        // --- Variant A setup (props.polly().voiceId())
+        // --- Variant A setup (props.getPolly().voiceId())
         props = new AppProps();
 
-        // If your accessors are props.polly().voiceId() style:
-        props.polly().setVoiceId("Joanna");
-        props.polly().setEngine("neural");
+        // If your accessors are props.getPolly().voiceId() style:
+        props.getPolly().setVoiceId("Joanna");
+        props.getPolly().setEngine("neural");
 
         service = new TextToSpeechService(polly, props);
 
         // --- If your AppProps uses getters like getPolly().getVoiceId(), use this instead:
         // props = new AppProps();
-        // var pollyCfg = new AppProps.Polly();
+        // var pollyCfg = new AppProps.getPolly();
         // pollyCfg.setVoiceId("Joanna");
         // pollyCfg.setEngine("neural");
         // props.setPolly(pollyCfg);

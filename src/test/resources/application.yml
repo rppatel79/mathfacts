@@ -13,4 +13,4 @@ spring:
     region: us-east-2
   polly:
     voiceId: Joanna
-    engine: neural
+    engine: standard

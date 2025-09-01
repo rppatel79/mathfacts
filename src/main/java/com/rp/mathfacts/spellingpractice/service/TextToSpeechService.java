@@ -20,8 +20,8 @@ public class TextToSpeechService {
 
     public byte[] synthesizePlain(String text) throws Exception{
         var req = SynthesizeSpeechRequest.builder()
-                .voiceId(props.polly().voiceId())
-                .engine(Engine.fromValue(props.polly().engine()))
+                .voiceId(props.getPolly().getVoiceId())
+                .engine(Engine.fromValue(props.getPolly().getEngine()))
                 .outputFormat(OutputFormat.MP3)
                 .text(text)
                 .textType(TextType.TEXT)
@@ -32,8 +32,8 @@ public class TextToSpeechService {
 
     public byte[] synthesizeSsml(String ssml) throws Exception{
         var req = SynthesizeSpeechRequest.builder()
-                .voiceId(props.polly().voiceId())
-                .engine(Engine.fromValue(props.polly().engine()))
+                .voiceId(props.getPolly().getVoiceId())
+                .engine(Engine.fromValue(props.getPolly().getEngine()))
                 .outputFormat(OutputFormat.MP3)
                 .text(ssml)
                 .textType(TextType.SSML)
