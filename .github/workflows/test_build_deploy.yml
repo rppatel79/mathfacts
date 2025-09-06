@@ -85,7 +85,7 @@ jobs:
         id: render_web
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: .github/workflows/ecs/mathfacts_web_task.json
+          task-definition: .github/workflows/ecs/mathfacts_fe_task.json
           container-name: mathfacts-fe
           image: ${{ env.REG }}/${{ env.WEB_REPO }}:${{ env.TAG }}
 
