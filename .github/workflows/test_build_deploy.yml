@@ -43,24 +43,55 @@ jobs:
 
       - name: Set up Docker tags
         run: |
-          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-          echo "ECR_URI=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}" >> $GITHUB_ENV
+          echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+          echo "REG=${{ secrets.ECR_REGISTRY }}" >> $GITHUB_ENV
+          echo "API_REPO=${{ secrets.ECR_REPOSITORY_API }}" >> $GITHUB_ENV
+          echo "WEB_REPO=${{ secrets.ECR_REPOSITORY_WEB }}" >> $GITHUB_ENV
 
-      - name: Build with Maven
-        run: mvn clean package
+      # Build & push backend (root Dockerfile)
+      - name: Build backend image
+        run: docker build -t $REG/$API_REPO:$TAG .
 
-      - name: Build Docker image
-        run: |
-          docker build -t $ECR_URI:$IMAGE_TAG .
+      - name: Push backend image
+        run: docker push $REG/$API_REPO:$TAG
 
-      - name: Push Docker image to ECR
-        run: |
-          docker push $ECR_URI:$IMAGE_TAG
+      # Build & push frontend (frontend/Dockerfile)
+      - name: Build frontend image
+        run: docker build -t $REG/$WEB_REPO:$TAG -f frontend/Dockerfile frontend
 
-      - name: Deploy to ECS
+      - name: Push frontend image
+        run: docker push $REG/$WEB_REPO:$TAG
+
+      # Render and deploy API task
+      - name: Render API task def
+        id: render_api
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: .github/workflows/ecs/mathfacts_api_task.json
+          container-name: mathfacts-api          # must match your task def
+          image: ${{ env.REG }}/${{ env.API_REPO }}:${{ env.TAG }}
+
+      - name: Deploy API
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.4
         with:
-          task-definition: .github/workflows/ecs/mathfacts_task.json
-          service: mathfacts-service
+          task-definition: ${{ steps.render_api.outputs.task-definition }}
+          service: mathfacts-api
           cluster: mathfacts
           wait-for-service-stability: true
+
+#      # Render and deploy WEB task
+#      - name: Render WEB task def
+#        id: render_web
+#        uses: aws-actions/amazon-ecs-render-task-definition@v1
+#        with:
+#          task-definition: .github/workflows/ecs/mathfacts_web_task.json
+#          container-name: mathfacts-web          # must match your task def
+#          image: ${{ env.REG }}/${{ env.WEB_REPO }}:${{ env.TAG }}
+#
+#      - name: Deploy WEB
+#        uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.4
+#        with:
+#          task-definition: ${{ steps.render_web.outputs.task-definition }}
+#          service: mathfacts-web
+#          cluster: mathfacts
+#          wait-for-service-stability: true
