@@ -1,14 +1,14 @@
-# Use a minimal base image with Java 21
-FROM eclipse-temurin:21-jdk-alpine
+# ---- Build stage
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
+WORKDIR /src
+COPY pom.xml ./
+RUN mvn -q -DskipTests dependency:go-offline
+COPY src ./src
+RUN mvn -q -DskipTests package
 
-# Set the working directory inside the container
+# ---- Runtime stage
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-
-# Copy the built JAR file into the container
-COPY target/mathfacts-*.jar app.jar
-
-# Expose the application port
+COPY --from=build /src/target/*.jar /app/app.jar
 EXPOSE 8080
-
-# Run the Spring Boot app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java","-jar","/app/app.jar"]

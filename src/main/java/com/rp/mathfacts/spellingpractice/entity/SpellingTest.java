@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
 
-public record SpellingTest (@NotBlank String testName,
+public record SpellingTest (@NotBlank String testId,
                             List<SpellingItem> items)
 {
 }

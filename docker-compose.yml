@@ -1,18 +1,33 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:16
-    container_name: math_practice_db
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mathfacts-api:local
+    container_name: backend
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: mathdb
-      POSTGRES_USER: mathuser
-      POSTGRES_PASSWORD: mathpass
     ports:
-      - "5432:5432"
+      - "8080:8080"
+    environment:
+      - AWS_REGION=us-east-1
+      - AWS_PROFILE=mathfacts
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ~/.aws:/root/.aws:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
 
-volumes:
-  postgres_data:
+  frontend:
+    build:
+      context: ./frontend
+    image: mathfacts-web:local
+    container_name: frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8081:80"          # Nginx listens on 80
