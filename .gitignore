@@ -4,6 +4,22 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+.env
+.env.*
+
+logs/
+*.log
+
+hs_err_pid*
+replay_pid*
+*.hprof
+
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+
+
 ### STS ###
 .apt_generated
 .classpath
