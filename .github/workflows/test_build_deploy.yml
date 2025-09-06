@@ -67,17 +67,18 @@ jobs:
         id: render_api
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: .github/workflows/ecs/mathfacts_api_task.json
-          container-name: mathfacts-api          # must match your task def
-          image: ${{ env.REG }}/${{ env.API_REPO }}:${{ env.TAG }}
+          task-definition: ecs/mathfacts_task.json
+          container-name: mathfacts-container
+          image: ${{ env.REG }}/${{ env.REPO }}:${{ env.TAG }}
 
       - name: Deploy API
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.4
         with:
           task-definition: ${{ steps.render_api.outputs.task-definition }}
-          service: mathfacts-api
+          service: mathfacts-service
           cluster: mathfacts
           wait-for-service-stability: true
+
 
 #      # Render and deploy WEB task
 #      - name: Render WEB task def
