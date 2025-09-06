@@ -67,7 +67,7 @@ jobs:
         id: render_api
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ecs/mathfacts_task.json
+          task-definition: .github/workflows/ecs/mathfacts_task.json
           container-name: mathfacts-container
           image: ${{ env.REG }}/${{ env.REPO }}:${{ env.TAG }}
 
