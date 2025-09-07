@@ -2,7 +2,7 @@
   "family": "mathfacts_fe_task",
   "containerDefinitions": [
     {
-      "name": "mathfacts_fe_task",
+      "name": "mathfacts-fe-container",
       "image": "541752449603.dkr.ecr.us-east-1.amazonaws.com/mathfacts_fe:latest",
       "cpu": 0,
       "portMappings": [

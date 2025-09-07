@@ -86,7 +86,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: .github/workflows/ecs/mathfacts_fe_task.json
-          container-name: mathfacts-fe
+          container-name: mathfacts-fe-container
           image: ${{ env.REG }}/${{ env.WEB_REPO }}:${{ env.TAG }}
 
       - name: Deploy WEB
