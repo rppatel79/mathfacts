@@ -3,6 +3,11 @@ logging:
     root: INFO
     com.rp.mathfacts: DEBUG
     software.amazon.awssdk: DEBUG
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,loggers
 spring:
   application:
     name: mathfacts
@@ -20,7 +25,7 @@ spring:
       path: /h2-console
       enabled: true
 app:
-  Aws:
+  aws:
     region: us-east-1
     s3Bucket: spelling-audio-rp
     presignSeconds: 86400
