@@ -1,3 +1,8 @@
+logging:
+  level:
+    root: INFO
+    com.rp.mathfacts: DEBUG
+    software.amazon.awssdk: DEBUG
 spring:
   application:
     name: mathfacts
