@@ -7,6 +7,7 @@ import com.rp.mathfacts.spellingpractice.entity.SpellingTest;
 import com.rp.mathfacts.spellingpractice.service.SpellingAudioService;
 import com.rp.mathfacts.spellingpractice.service.entity.TtsResponse;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,7 @@ import org.springframework.ui.Model;
 
 @RestController
 @RequestMapping("/api/spelling")
+@Slf4j
 public class SpellingController {
 
     private final ObjectMapper mapper;
@@ -31,8 +33,13 @@ public class SpellingController {
 
     @PostMapping("/tts")
     public TtsResponse tts(@Valid @RequestBody SpellingTest req) {
-        var results = service.ensureBatch(req.testId(), req.items());
-        return new TtsResponse(req.testId(), results);
+        try {
+            var results = service.ensureBatch(req.testId(), req.items());
+            return new TtsResponse(req.testId(), results);
+        } catch (Exception e) {
+            log.error("TTS failed for testId={} : {}", req.testId(), e.toString(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/tests/{testId}")
