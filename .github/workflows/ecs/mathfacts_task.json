@@ -51,6 +51,7 @@
     }
   ],
   "family": "mathfacts_task",
+  "taskRoleArn": "arn:aws:iam::541752449603:role/mathfacts-app-role",
   "executionRoleArn": "arn:aws:iam::541752449603:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "volumes": [],
