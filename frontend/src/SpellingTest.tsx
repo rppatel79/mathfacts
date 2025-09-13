@@ -4,18 +4,16 @@ type SpellingItem = { word: string; sentence: string };
 type TtsRequest = { testId: string; items: SpellingItem[] };
 type AudioInfo = { word: string; sentenceUrl: string; promptUrl: string };
 type TtsResponse = { testId: string; results: AudioInfo[] };
+type TestListItem = { testId: string; itemCount: number };
 
 type Row = {
   idx: number;
   word: string;
-  audioUrl: string;      // using combined prompt (promptUrl)
+  audioUrl: string;
   userAnswer: string;
   correct: boolean | null;
 };
 
-function normalize(s: string) {
-  return s.trim().toLowerCase();
-}
 function getQueryParam(name: string) {
   const url = new URL(window.location.href);
   return url.searchParams.get(name) ?? "";
@@ -27,8 +25,16 @@ function formatDuration(ms: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function parseWeekIdToDate(id: string): number {
+  const m = id.match(/^week-(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return Number.MIN_SAFE_INTEGER;
+  const [_, y, mo, d] = m;
+  return new Date(Number(y), Number(mo) - 1, Number(d)).getTime();
+}
+
 export default function SpellingTest() {
-  const [testId, setTestId] = useState(getQueryParam("testId"));
+  const [tests, setTests] = useState<TestListItem[] | null>(null);
+  const [testId, setTestId] = useState<string>(getQueryParam("testId") || "");
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -46,8 +52,45 @@ export default function SpellingTest() {
     [rows]
   );
 
+  // Normalization helpers for answer comparison
+  const normalize = (s?: string) => {
+    if (!s) return "";
+    return s
+      .toLocaleLowerCase("en-US")
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .replace(/[\u2019\u2018\u02BC]/g, "'")
+      .trim();
+  };
+  const equalSpelling = (answer: string, expected: string) => {
+    const a = normalize(answer);
+    const b = normalize(expected);
+    if (a === b) return true;
+    return a.replace(/'/g, "") === b.replace(/'/g, "");
+  };
+
+  // 1) Fetch available tests and preselect
   useEffect(() => {
-    if (testId) void loadTest();
+    (async () => {
+      try {
+        const r = await fetch("/api/spelling/tests/ids");
+        if (!r.ok) throw new Error(`Failed to load tests (${r.status})`);
+        const list = (await r.json()) as TestListItem[];
+
+        // Sort newest first if they follow week-YYYY-MM-DD; otherwise keep as-is
+        const sorted = [...list].sort(
+          (a, b) => parseWeekIdToDate(b.testId) - parseWeekIdToDate(a.testId)
+        );
+        setTests(sorted);
+
+        // If URL didn’t specify ?testId=, pick latest
+        if (!testId && sorted.length > 0) {
+          setTestId(sorted[0].testId);
+        }
+      } catch (e: any) {
+        setError(e?.message || String(e));
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -106,12 +149,15 @@ export default function SpellingTest() {
   }
 
   function updateAnswer(idx: number, value: string) {
-    setRows(prev => prev.map(r => (r.idx === idx ? { ...r, userAnswer: value } : r)));
+    setRows((prev) => prev.map((r) => (r.idx === idx ? { ...r, userAnswer: value } : r)));
   }
 
   function submitAll() {
-    setRows(prev =>
-      prev.map(r => ({ ...r, correct: normalize(r.userAnswer) === normalize(r.word) }))
+    setRows((prev) =>
+      prev.map((r) => ({
+        ...r,
+        correct: equalSpelling(r.userAnswer ?? "", r.word ?? ""),
+      }))
     );
     setSubmitted(true);
     if (startedAt) setElapsedMs(Date.now() - startedAt);
@@ -122,13 +168,21 @@ export default function SpellingTest() {
       <h1>Spelling Test</h1>
 
       <div className="toolbar">
-        <input
+        {/* Test picker populated from backend */}
+        <select
           value={testId}
-          onChange={e => setTestId(e.target.value)}
-          placeholder="testId (e.g., week-2025-09-01)"
-          onKeyDown={e => { if (e.key === "Enter") void loadTest(); }}
-          disabled={loading}
-        />
+          onChange={(e) => setTestId(e.target.value)}
+          disabled={loading || !tests}
+        >
+          {!tests && <option>Loading tests…</option>}
+          {tests &&
+            tests.map((t) => (
+              <option key={t.testId} value={t.testId}>
+                {t.testId} ({t.itemCount})
+              </option>
+            ))}
+        </select>
+
         <button disabled={loading || !testId.trim()} onClick={loadTest}>
           {loading ? "Loading…" : "Start"}
         </button>
@@ -137,7 +191,12 @@ export default function SpellingTest() {
         {total > 0 && (
           <div className="score">
             Score: <b>{correctCount}</b> / {total}
-            {elapsedMs != null && <> • Time: <b>{formatDuration(elapsedMs)}</b></>}
+            {elapsedMs != null && (
+              <>
+                {" "}
+                • Time: <b>{formatDuration(elapsedMs)}</b>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -152,7 +211,9 @@ export default function SpellingTest() {
               <>
                 <button onClick={() => play(activeIdx)}>▶ Play</button>
                 <button onClick={() => activeIdx! > 0 && play(activeIdx! - 1)}>⏮ Prev</button>
-                <button onClick={() => activeIdx! < rows.length - 1 && play(activeIdx! + 1)}>⏭ Next</button>
+                <button onClick={() => activeIdx! < rows.length - 1 && play(activeIdx! + 1)}>
+                  ⏭ Next
+                </button>
               </>
             )}
           </div>
@@ -174,10 +235,12 @@ export default function SpellingTest() {
 
                   <div className="row">
                     <input
-                      ref={(el) => { inputsRef.current[i] = el; }}
+                      ref={(el) => {
+                        inputsRef.current[i] = el;
+                      }}
                       value={r.userAnswer}
-                      onChange={e => updateAnswer(i, e.target.value)}
-                      onKeyDown={e => {
+                      onChange={(e) => updateAnswer(i, e.target.value)}
+                      onKeyDown={(e) => {
                         if (e.key === "Enter" && i < rows.length - 1) {
                           inputsRef.current[i + 1]?.focus();
                         }

@@ -1,6 +1,7 @@
 package com.rp.mathfacts.spellingpractice.controller;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rp.mathfacts.spellingpractice.entity.SpellingItem;
 import com.rp.mathfacts.spellingpractice.entity.SpellingTest;
@@ -9,11 +10,17 @@ import com.rp.mathfacts.spellingpractice.service.entity.TtsResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.ui.Model;
 
@@ -30,6 +37,20 @@ public class SpellingController {
         this.mapper=mapper;
         this.service = service;
     }
+
+    @GetMapping("/tests")
+    public List<TestPayload> getAllTests() {
+        return loadAllTests();
+    }
+
+    @GetMapping("/tests/ids")
+    public List<TestListItem> listTestIds() {
+        return loadAllTests().stream()
+                .map(t -> new TestListItem(t.testId(), t.items().size()))
+                .sorted(Comparator.comparing(TestListItem::testId))
+                .collect(Collectors.toList());
+    }
+
 
     @PostMapping("/tts")
     public TtsResponse tts(@Valid @RequestBody SpellingTest req) {
@@ -91,6 +112,32 @@ public class SpellingController {
             throw new RuntimeException("Test not found or invalid: " + testId, e);
         }
     }
+
+    private List<TestPayload> loadAllTests() {
+        try {
+            var resolver = new PathMatchingResourcePatternResolver(getClass().getClassLoader());
+            Resource[] resources = resolver.getResources("classpath*:spelling/tests/*.json");
+
+            List<TestPayload> out = new ArrayList<>(resources.length);
+            for (Resource r : resources) {
+                String filename = r.getFilename();
+                if (filename == null || !filename.endsWith(".json")) continue;
+                String testId = filename.substring(0, filename.length() - ".json".length());
+                try (InputStream in = r.getInputStream()) {
+                    SpellingTest test = mapper.readValue(in, new TypeReference<SpellingTest>() {});
+                    out.add(new TestPayload(testId, test.items()));
+                } catch (Exception ex) {
+                    log.warn("Skipping invalid test JSON {}: {}", filename, ex.toString());
+                }
+            }
+            out.sort(Comparator.comparing(TestPayload::testId));
+            return out;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load tests from classpath", e);
+        }
+    }
+
+    public record TestListItem(String testId, int itemCount) {}
 
     public record TestPayload(String testId, List<SpellingItem> items) {}
     public record Row(int idx, String audioUrl, String sentence) {}

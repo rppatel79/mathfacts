@@ -21,7 +21,7 @@ public class MathPracticeController {
             case INTERMEDIATE -> 10;
             case ADVANCED -> 12;
         };
-        int a = random.nextInt(base) + 1;
+        int a = 8; // temp, just doing 8s
         int b = random.nextInt(base) + 1;
 
         Question question = new Question(a, b, testType, level);
