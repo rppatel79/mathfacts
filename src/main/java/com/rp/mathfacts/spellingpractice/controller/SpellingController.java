@@ -9,17 +9,15 @@ import com.rp.mathfacts.spellingpractice.service.SpellingAudioService;
 import com.rp.mathfacts.spellingpractice.service.entity.TtsResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.ui.Model;
@@ -31,11 +29,17 @@ public class SpellingController {
 
     private final ObjectMapper mapper;
     private final SpellingAudioService service;
+    private final ResourcePatternResolver resolver;
+    private final String testsBase;
 
-
-    public SpellingController(ObjectMapper mapper, SpellingAudioService service) {
-        this.mapper=mapper;
+    public SpellingController(ObjectMapper mapper,
+                              SpellingAudioService service,
+                              ResourcePatternResolver resolver,
+                              @Value("${spelling.tests.base:spelling/tests}") String testsBase) {
+        this.mapper = mapper;
         this.service = service;
+        this.resolver = resolver;
+        this.testsBase = testsBase;
     }
 
     @GetMapping("/tests")
@@ -58,7 +62,7 @@ public class SpellingController {
             var results = service.ensureBatch(req.testId(), req.items());
             return new TtsResponse(req.testId(), results);
         } catch (Exception e) {
-            log.error("TTS failed for testId={} : {}", req.testId(), e.toString(), e);
+            log.error("TTS failed for testId={} : {}", req.testId(), e, e);
             throw e;
         }
     }
@@ -115,15 +119,14 @@ public class SpellingController {
 
     private List<TestPayload> loadAllTests() {
         try {
-            var resolver = new PathMatchingResourcePatternResolver(getClass().getClassLoader());
-            Resource[] resources = resolver.getResources("classpath*:spelling/tests/*.json");
+            Resource[] resources = resolver.getResources("classpath*:" + testsBase + "/*.json");
+            var byName = indexOrThrowAllDuplicates(resources);
 
-            List<TestPayload> out = new ArrayList<>(resources.length);
-            for (Resource r : resources) {
-                String filename = r.getFilename();
-                if (filename == null || !filename.endsWith(".json")) continue;
+            List<TestPayload> out = new ArrayList<>(byName.size());
+            for (Map.Entry<String, Resource> e : byName.entrySet()) {
+                String filename = e.getKey();
                 String testId = filename.substring(0, filename.length() - ".json".length());
-                try (InputStream in = r.getInputStream()) {
+                try (InputStream in = e.getValue().getInputStream()) {
                     SpellingTest test = mapper.readValue(in, new TypeReference<SpellingTest>() {});
                     out.add(new TestPayload(testId, test.items()));
                 } catch (Exception ex) {
@@ -137,8 +140,39 @@ public class SpellingController {
         }
     }
 
+    private Map<String, Resource> indexOrThrowAllDuplicates(Resource[] resources) {
+        Map<String, List<Resource>> groups = Arrays.stream(resources)
+                .filter(Resource::isReadable)
+                .collect(Collectors.groupingBy(this::jsonFilename));
+
+        List<String> dups = groups.entrySet().stream()
+                .filter(e -> e.getValue().size() > 1)
+                .map(e -> e.getKey() + " -> " + e.getValue().stream().map(this::urlOf).collect(Collectors.joining(", ")))
+                .toList();
+
+        if (!dups.isEmpty()) {
+            throw new IllegalStateException("Duplicate JSON resources detected:\n - " + String.join("\n - ", dups));
+        }
+
+        // no duplicates, collapse to single map
+        return groups.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0), (a,b)->a, LinkedHashMap::new));
+    }
+
+    private String jsonFilename(Resource r) {
+        String name = r.getFilename();
+        if (name == null || !name.endsWith(".json")) {
+            throw new IllegalArgumentException("Expected a .json filename but got '" + name + "' from " + urlOf(r));
+        }
+        return name;
+    }
+
+    private String urlOf(Resource r) {
+        try { return String.valueOf(r.getURL()); }
+        catch (Exception e) { return r.toString(); }
+    }
+
     public record TestListItem(String testId, int itemCount) {}
 
     public record TestPayload(String testId, List<SpellingItem> items) {}
-    public record Row(int idx, String audioUrl, String sentence) {}
 }

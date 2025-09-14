@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -33,7 +32,6 @@ public class StudentControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-/*
     static final String DEMO_TEST_ID = "demo";
 
     @Test
@@ -42,10 +40,9 @@ public class StudentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.testId").value(DEMO_TEST_ID))
-                .andExpect(jsonPath("$.items", hasSize(greaterThanOrEqualTo(2))))
-                .andExpect(jsonPath("$.items[0].word",  org.hamcrest.Matchers.not(org.hamcrest.Matchers.isEmptyOrNullString())))
-                .andExpect(jsonPath("$.items[0].sentence",  org.hamcrest.Matchers.not(org.hamcrest.Matchers.isEmptyOrNullString())));
-    }
+                .andExpect(jsonPath("$.items", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.items[0].word", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.items[0].sentence", not(emptyOrNullString())));    }
 
     @Test
     void getAllTests_containsDemo() throws Exception {
@@ -63,13 +60,11 @@ public class StudentControllerTest {
         mockMvc.perform(get("/api/spelling/tests/ids"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                // ensure demo is listed
                 .andExpect(jsonPath("$[*].testId", hasItem(DEMO_TEST_ID)))
-                // itemCount should be >= 1 for our demo
-                .andExpect(jsonPath("$[?(@.testId=='" + DEMO_TEST_ID + "')].itemCount[0]",
-                        greaterThanOrEqualTo(1)));
+                .andExpect(jsonPath("$[?(@.testId=='" + DEMO_TEST_ID + "')].itemCount",
+                        hasItem(greaterThanOrEqualTo(1))));
     }
-*/
+
     @Test
     public void testAddAndGetStudent() throws Exception {
         // Prepare testTypeToLevel map
@@ -169,8 +164,7 @@ public class StudentControllerTest {
 
         String updatedJson = objectMapper.writeValueAsString(partialUpdate);
 
-        // PUT the update (only session data)
-        MvcResult putResult = mockMvc.perform(put("/students/" + studentId)
+        mockMvc.perform(put("/students/" + studentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatedJson))
                 .andExpect(status().isOk())
