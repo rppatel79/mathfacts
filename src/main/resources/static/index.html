@@ -11,24 +11,18 @@
           margin: auto;
           background-color: #f9f9f9;
         }
-
-        h1 {
-          text-align: center;
-        }
-
+        h1 { text-align: center; }
         label {
           display: block;
           margin-top: 15px;
           font-weight: bold;
         }
-
         input[type="text"], select {
           width: 100%;
           padding: 8px;
           margin-top: 5px;
           box-sizing: border-box;
         }
-
         button {
           margin-top: 20px;
           padding: 10px 20px;
@@ -40,46 +34,13 @@
           cursor: pointer;
           border-radius: 4px;
         }
-
-        button:hover {
-          background-color: #0056b3;
-        }
-
-        .divider {
-          margin: 25px 0;
-          border-top: 1px solid #ccc;
-        }
-
-        .checkbox-group {
-          margin-top: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .checkbox-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          line-height: 1.5;
-        }
-
-        .checkbox-item {
-          display: flex;
-          align-items: baseline; /* better alignment with text */
-          gap: 8px;
-        }
-
-        .checkbox-item input[type="checkbox"] {
-          vertical-align: middle;
-          margin: 0;
-          accent-color: #007bff; /* optional: makes checkbox blue */
-        }
+        button:hover { background-color: #0056b3; }
+        .divider { margin: 25px 0; border-top: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
-<h1>Math Facts – Choose Student</h1>
+<h1>Math Facts - Choose Student</h1>
 
 <!-- Existing Student Dropdown -->
 <label for="existing-student">Select an existing student:</label>
@@ -94,33 +55,30 @@
     <label for="new-student-name">New student name:</label>
     <input type="text" id="new-student-name" placeholder="Enter name">
 
-    <label>Select test types:</label>
-    <div id="test-type-checkboxes" class="checkbox-group">
-        <!-- Checkboxes added here dynamically -->
-    </div>
+    <label for="test-type-select">Select test type:</label>
+    <select id="test-type-select">
+        <!-- Options added dynamically -->
+    </select>
 </div>
 
 <button onclick="continueToTest()">Continue</button>
 
 <script>
-    const STARTING_LEVEL = "ADVANCED";
+    // Default starting level for a newly created student
+    var STARTING_LEVEL = "ADVANCED";
 
-    const hardcodedTestTypes = [
-      "ADDITION",
-      "SUBTRACTION",
-      "MULTIPLICATION",
-      "DIVISION"
-    ];
+    // Allowed single test types
+    var TEST_TYPES = ["ADDITION", "SUBTRACTION", "MULTIPLICATION", "DIVISION"];
 
     async function fetchStudents() {
       try {
-        const res = await fetch('/students');
+        var res = await fetch('/students');
         if (!res.ok) throw new Error("Failed to load students");
 
-        const students = await res.json();
-        const select = document.getElementById('existing-student');
-        students.forEach(student => {
-          const opt = document.createElement('option');
+        var students = await res.json();
+        var select = document.getElementById('existing-student');
+        students.forEach(function(student) {
+          var opt = document.createElement('option');
           opt.value = student.id;
           opt.textContent = student.name;
           select.appendChild(opt);
@@ -130,63 +88,50 @@
       }
     }
 
-    function renderTestTypeCheckboxes() {
-      const container = document.getElementById('test-type-checkboxes');
-      container.innerHTML = '';
-
-      hardcodedTestTypes.forEach(type => {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'checkbox-item';
-
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = `testtype-${type}`;
-          checkbox.value = type;
-
-          const label = document.createElement('label');
-          label.htmlFor = checkbox.id;
-          label.textContent = type;
-
-          wrapper.appendChild(checkbox);
-          wrapper.appendChild(label);
-          container.appendChild(wrapper);
+    function renderTestTypeSelect() {
+      var sel = document.getElementById('test-type-select');
+      sel.innerHTML = "";
+      TEST_TYPES.forEach(function(type) {
+        var opt = document.createElement('option');
+        opt.value = type;
+        opt.textContent = type;
+        sel.appendChild(opt);
       });
     }
 
     async function continueToTest() {
-      const selectedId = document.getElementById('existing-student').value;
-      const newName = document.getElementById('new-student-name').value.trim();
+      var selectedId = document.getElementById('existing-student').value;
+      var newName = document.getElementById('new-student-name').value.trim();
 
+      // If an existing student is chosen, go straight to test
       if (selectedId) {
-        window.location.href = `/test.html?studentId=${selectedId}`;
+        window.location.href = "/test.html?studentId=" + encodeURIComponent(selectedId);
         return;
       }
 
+      // Otherwise, we are creating a new student with a single test type
       if (!newName) {
         alert("Please enter a name for the new student.");
         return;
       }
 
-      const selectedTestTypes = Array.from(document.querySelectorAll('#test-type-checkboxes input:checked'))
-        .map(cb => cb.value);
-
-      if (selectedTestTypes.length === 0) {
-        alert("Please select at least one test type.");
+      var chosenType = document.getElementById('test-type-select').value;
+      if (!chosenType) {
+        alert("Please select a test type.");
         return;
       }
 
-      const testTypeToLevel = {};
-      selectedTestTypes.forEach(tt => {
-        testTypeToLevel[tt] = STARTING_LEVEL;
-      });
+      // Build mapping with exactly one test type -> starting level
+      var testTypeToLevel = {};
+      testTypeToLevel[chosenType] = STARTING_LEVEL;
 
-      const student = {
+      var student = {
         name: newName,
         testTypeToLevel: testTypeToLevel
       };
 
       try {
-        const res = await fetch('/students', {
+        var res = await fetch('/students', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(student)
@@ -194,21 +139,21 @@
 
         if (!res.ok) throw new Error("Failed to create student");
 
-        const newStudent = await res.json();
-        window.location.href = `/test.html?studentId=${newStudent.id}`;
+        var newStudent = await res.json();
+        window.location.href = "/test.html?studentId=" + encodeURIComponent(newStudent.id);
       } catch (error) {
         alert("Error creating student: " + error.message);
       }
     }
 
     function toggleNewStudentFields() {
-      const selected = document.getElementById('existing-student').value;
+      var selected = document.getElementById('existing-student').value;
       document.getElementById('new-student-fields').style.display = selected ? 'none' : 'block';
     }
 
     // Initial setup
+    renderTestTypeSelect();
     fetchStudents();
-    renderTestTypeCheckboxes();
     toggleNewStudentFields();
 </script>
 

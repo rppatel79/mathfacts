@@ -3,256 +3,336 @@
 <head>
     <meta charset="UTF-8" />
     <title>Math Practice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        #question-container { margin-top: 20px; }
-        #scoreboard { margin-top: 10px; }
+        :root {
+          --gap: 12px;
+        }
+        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.4; }
+        h1 { margin: 0 0 var(--gap) 0; }
+        .row { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
+        .row > * { margin: 0; }
+        #question-container { margin-top: 16px; }
+        #question { font-size: 1.4rem; margin: 8px 0; }
+        input[type="number"] { padding: 6px 8px; font-size: 1rem; width: 180px; }
+        button { padding: 8px 12px; font-size: 1rem; cursor: pointer; }
+        button:disabled { opacity: 0.5; cursor: default; }
+        #scoreboard { margin-top: 14px; }
+        #result { min-height: 1.2em; }
+        .muted { color: #666; font-size: 0.95rem; }
+        .box { border: 1px solid #ddd; border-radius: 6px; padding: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--gap); }
+        .label { font-weight: bold; }
     </style>
 </head>
 <body>
-<h1>Math Practice</h1>
+<h1 id="title">Math Practice</h1>
 
-<select id="level" disabled>
-    <option value="BEGINNER">Level 1</option>
-    <option value="INTERMEDIATE">Level 2</option>
-    <option value="ADVANCED">Level 3</option>
-</select>
-
-<div id="question-container">
-    <p id="question"></p>
-    <input type="number" id="answer" placeholder="Your answer">
-    <button id="submit-btn" onclick="submitAnswer()" disabled>Submit</button>
+<div class="box grid">
+    <div>
+        <div class="label">Student</div>
+        <div id="student-name" class="muted">Loading...</div>
+    </div>
+    <div>
+        <div class="label">Test Type</div>
+        <select id="test-type">
+            <option value="ADDITION">Addition</option>
+            <option value="SUBTRACTION">Subtraction</option>
+            <option value="MULTIPLICATION">Multiplication</option>
+            <option value="DIVISION">Division</option>
+        </select>
+    </div>
+    <div>
+        <div class="label">Assigned Level</div>
+        <div id="assigned-level" class="muted">-</div>
+    </div>
+    <div>
+        <div class="label">Duration</div>
+        <div class="muted">2 minutes</div>
+    </div>
 </div>
 
-<div id="scoreboard">
+<div class="row" style="margin-top: 12px;">
+    <button id="start-btn">Start Test</button>
+    <button id="finish-btn" disabled>Finish</button>
+    <div id="timer" class="muted">Time 02:00</div>
+</div>
+
+<div id="question-container" class="box">
+    <p id="question"></p>
+    <div class="row">
+        <input type="number" id="answer" placeholder="Your answer" disabled />
+        <button id="submit-btn" disabled>Submit</button>
+    </div>
+</div>
+
+<div id="scoreboard" class="box">
     <p id="result"></p>
     <p id="score">Score: 0 / 0</p>
     <p id="streak">Streak: 0</p>
-    <p id="timer">⏱️ Time: 0s</p>
-    <button id="clear-score-btn" onclick="clearScore()" disabled>Clear Score</button>
 </div>
 
-<!-- Sound effects -->
+<!-- Optional sounds; safe to keep (no emojis in messages) -->
 <audio id="success-sound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
 <audio id="incorrect-sound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
-<audio id="levelup-sound" src="https://www.soundjay.com/misc/sounds/button-2.mp3" preload="auto"></audio>
 
 <script>
-    const CORRECT_STREAK=60;
-    const levelSelect = document.getElementById('level');
-    const levelOrder = ["BEGINNER", "INTERMEDIATE", "ADVANCED"];
-
-    let currentQuestion = {};
-    let total = 0, correct = 0, incorrect = 0, streak = 0, timer = 0;
-    let timerInterval;
-    let currentTestType = null;
-    let currentLevelEnum = null;
-    let testTypeMap = {};
-
-    const correctSound = document.getElementById('success-sound');
-    const incorrectSound = document.getElementById('incorrect-sound');
-    const levelUpSound = document.getElementById('levelup-sound');
-
-    const submitBtn = document.getElementById('submit-btn');
-    const clearScoreBtn = document.getElementById('clear-score-btn');
-
-    const answerInput = document.getElementById('answer');
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const studentId = urlParams.get('studentId');
-
-    async function updateStudentSession() {
-        const payload = {
-            session: {
-                testType: currentTestType,
-                level: currentLevelEnum,
-                correctStreak: streak,
-                incorrectStreak: incorrect,
-                currentQuestion: currentQuestion
-            }
-        };
-
-        await fetch(`/students/${studentId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+    // ----- Utilities -----
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function fmtSeconds(s) {
+      s = Math.max(0, s|0);
+      var m = Math.floor(s / 60), r = s % 60;
+      return pad2(m) + ":" + pad2(r);
     }
 
+    // ----- Elements -----
+    var titleEl = document.getElementById('title');
+    var studentNameEl = document.getElementById('student-name');
+    var assignedLevelEl = document.getElementById('assigned-level');
+
+    var testTypeSel = document.getElementById('test-type');
+
+    var startBtn = document.getElementById('start-btn');
+    var finishBtn = document.getElementById('finish-btn');
+    var timerEl = document.getElementById('timer');
+
+    var questionEl = document.getElementById('question');
+    var answerInput = document.getElementById('answer');
+    var submitBtn = document.getElementById('submit-btn');
+
+    var resultEl = document.getElementById('result');
+    var scoreEl = document.getElementById('score');
+    var streakEl = document.getElementById('streak');
+
+    var sfxCorrect = document.getElementById('success-sound');
+    var sfxWrong = document.getElementById('incorrect-sound');
+
+    // ----- State -----
+    var urlParams = new URLSearchParams(window.location.search);
+    var studentId = urlParams.get('studentId');
+
+    var testId = null;
+    var endsAtMs = null;
+
+    var total = 0, correct = 0, incorrect = 0, streak = 0;
+
+    var currentTestType = null;
+    var currentLevelEnum = null; // assigned via student.testTypeToLevel[currentTestType]
+
+    var testTypeMap = {}; // student.testTypeToLevel
+    var tickHandle = null;
+
+    // ----- Load student and initialize -----
     async function loadStudent() {
-        if (!studentId) {
-            alert("Missing student ID. Please go back and select a student.");
-            return;
-        }
+      if (!studentId) {
+        alert("Missing studentId. Add ?studentId=... to the URL.");
+        return;
+      }
+      var res = await fetch('/students/' + encodeURIComponent(studentId));
+      if (!res.ok) {
+        alert('Could not load student.');
+        return;
+      }
+      var student = await res.json();
+      titleEl.textContent = 'Math Practice - ' + student.name;
+      studentNameEl.textContent = student.name || '(unknown)';
 
-        try {
-            const res = await fetch(`/students/${studentId}`);
-            if (!res.ok) throw new Error("Student not found");
+      testTypeMap = student.testTypeToLevel || {};
+      var types = Object.keys(testTypeMap);
+      if (types.length === 0) {
+        alert('Student has no test types assigned.');
+        return;
+      }
 
-            const student = await res.json();
-            document.querySelector('h1').innerText = `Math Practice – ${student.name}`;
+      // Pick first assigned type by default (you can change this logic)
+      currentTestType = types[0];
+      currentLevelEnum = testTypeMap[currentTestType];
 
-            testTypeMap = student.testTypeToLevel;
-            const testTypes = Object.keys(testTypeMap);
-            if (testTypes.length === 0) {
-                alert("Student has no test types assigned.");
-                return;
-            }
+      // Reflect in UI
+      testTypeSel.value = currentTestType;
+      assignedLevelEl.textContent = currentLevelEnum;
 
-            currentTestType = testTypes[0];
-            currentLevelEnum = testTypeMap[currentTestType];
-
-            levelSelect.value = currentLevelEnum;
-
-            await getQuestion(); // Load the first question
-
-        } catch (error) {
-            alert("Error loading student: " + error.message);
-        }
+      // Allow changing test type; level will follow mapping
+      testTypeSel.addEventListener('change', function () {
+        currentTestType = testTypeSel.value;
+        currentLevelEnum = testTypeMap[currentTestType] || currentLevelEnum;
+        assignedLevelEl.textContent = currentLevelEnum || '-';
+      });
     }
 
-    async function getQuestion() {
-        const res = await fetch(`/api/math/question?level=${currentLevelEnum}&testType=${currentTestType}`);
-        const data = await res.json();
-
-        currentQuestion = {
-            a: data.a,
-            b: data.b,
-            testType: currentTestType
-        };
-
-        document.getElementById('question').innerText = `What is ${data.question}?`;
-        document.getElementById('result').innerText = '';
-        answerInput.value = '';
-        answerInput.disabled = false;
-        answerInput.focus();
-        submitBtn.disabled = false;
-        clearScoreBtn.disabled = false;
-        resetTimer();
-    }
-
-    async function submitAnswer() {
-        const answer = parseInt(answerInput.value, 10);
-        answerInput.value = '';
-        if (isNaN(answer)) return;
-
-        const res = await fetch('/api/math/answer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...currentQuestion, answer })
-        });
-
-        const result = await res.json();
-        total++;
-        stopTimer();
-
-        if (result.correct) {
-            correct++;
-            streak++;
-            correctSound.play();
-            document.getElementById('result').innerText = `✅ Correct! (${timer}s)`;
-
-            if (streak % CORRECT_STREAK === 0) {
-                incorrect = 0;
-                const allTestsFinished = levelUp();
-                if (allTestsFinished) return;
-            }
-        } else {
-            incorrect++;
-            streak = 0;
-            incorrectSound.play();
-            document.getElementById('result').innerText = `❌ Incorrect. The correct answer is ${result.expected} (${timer}s)`;
-
-            if (incorrect >= 4) {
-                levelDown();
-                incorrect = 0;
-            }
-        }
-
-        updateScoreboard();
-
-        await getQuestion();
-        await updateStudentSession();
-    }
-
-    function levelUp() {
-        const currentIndex = levelOrder.indexOf(levelSelect.value);
-
-        if (currentIndex < levelOrder.length - 1) {
-            const nextLevel = levelOrder[currentIndex + 1];
-            levelSelect.value = nextLevel;
-            currentLevelEnum = nextLevel;
-            document.getElementById('result').innerText += ` 🎉 Level up to ${nextLevel}!`;
-            levelUpSound.play();
-            return false;
-        } else {
-            const testTypeKeys = Object.keys(testTypeMap);
-            const currentTestIndex = testTypeKeys.indexOf(currentTestType);
-
-            if (currentTestIndex < testTypeKeys.length - 1) {
-                currentTestType = testTypeKeys[currentTestIndex + 1];
-                currentLevelEnum = testTypeMap[currentTestType];
-                levelSelect.value = currentLevelEnum;
-                document.getElementById('result').innerText += ` 🚀 Moving to next test: ${currentTestType} (Level ${currentLevelEnum})`;
-                levelUpSound.play();
-                return false;
-            } else {
-                document.getElementById('result').innerText += ` 🏆 You finished all tests!`;
-                levelUpSound.play();
-                stopTimer();
-                submitBtn.disabled = true;
-                answerInput.disabled = true;
-                currentQuestion = null;
-                return true;
-            }
-        }
-    }
-
-    function levelDown() {
-        const currentIndex = levelOrder.indexOf(levelSelect.value);
-        if (currentIndex > 0) {
-            const previousLevel = levelOrder[currentIndex - 1];
-            levelSelect.value = previousLevel;
-            currentLevelEnum = previousLevel;
-            document.getElementById('result').innerText += ` ⚠️ Level down to ${previousLevel}`;
-        } else {
-            document.getElementById('result').innerText += ` ⚠️ Still at Level 1`;
-        }
+    // ----- Scoreboard / Timer helpers -----
+    function resetState() {
+      total = 0; correct = 0; incorrect = 0; streak = 0;
+      questionEl.textContent = '';
+      answerInput.value = '';
+      resultEl.textContent = '';
+      updateScoreboard();
+      timerEl.textContent = 'Time 02:00';
     }
 
     function updateScoreboard() {
-        document.getElementById('score').innerText = `Score: ${correct} / ${total}`;
-        document.getElementById('streak').innerText = `Streak: ${streak}`;
+      scoreEl.textContent = 'Score: ' + correct + ' / ' + total;
+      streakEl.textContent = 'Streak: ' + streak;
     }
 
-    function clearScore() {
-        total = 0;
-        correct = 0;
-        incorrect = 0;
-        streak = 0;
-        updateScoreboard();
+    function enableQA(on) {
+      answerInput.disabled = !on;
+      submitBtn.disabled = !on;
+      finishBtn.disabled = !on;
     }
 
-    function resetTimer() {
-        stopTimer();
-        timer = 0;
-        document.getElementById('timer').innerText = `⏱️ Time: ${timer}s`;
-        timerInterval = setInterval(() => {
-            timer++;
-            document.getElementById('timer').innerText = `⏱️ Time: ${timer}s`;
-        }, 1000);
-    }
-
-    function stopTimer() {
-        if (timerInterval) clearInterval(timerInterval);
-    }
-
-    answerInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            submitAnswer();
+    function startLocalTick() {
+      stopLocalTick();
+      tickHandle = setInterval(function () {
+        var now = Date.now();
+        var left = Math.max(0, Math.floor((endsAtMs - now) / 1000));
+        timerEl.textContent = 'Time ' + fmtSeconds(left);
+        if (left <= 0) {
+          timeUp();
         }
+      }, 250);
+    }
+
+    function stopLocalTick() {
+      if (tickHandle) clearInterval(tickHandle);
+      tickHandle = null;
+    }
+
+    // ----- Server calls for timed test -----
+    async function startTest() {
+      if (!currentTestType || !currentLevelEnum) {
+        alert('Missing test type or level.');
+        return;
+      }
+      resetState();
+      enableQA(false);
+      startBtn.disabled = true;
+
+      var payload = {
+        studentId: studentId,
+        testType: currentTestType,
+        level: currentLevelEnum,
+        durationSec: 120
+      };
+
+      var res = await fetch('/api/math/test/start', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        alert('Failed to start test.');
+        startBtn.disabled = false;
+        return;
+      }
+      var data = await res.json();
+      testId = data.testId;
+      endsAtMs = data.endsAtEpochMs;
+
+      await loadQuestion();
+      enableQA(true);
+      answerInput.focus();
+      startLocalTick();
+    }
+
+    async function loadQuestion() {
+      if (!testId) return;
+      var res = await fetch('/api/math/test/' + testId + '/question');
+      if (res.status === 410) { timeUp(); return; }
+      if (!res.ok) { alert('Could not load question.'); return; }
+      var q = await res.json();
+      questionEl.textContent = 'What is ' + q.question + '?';
+      timerEl.textContent = 'Time ' + fmtSeconds(q.timeLeftSec);
+      answerInput.value = '';
+      answerInput.focus();
+    }
+
+    function parseCurrentQuestion() {
+      // "What is A op B?"
+      var s = questionEl.textContent.replace('What is ', '').replace('?', '').trim();
+      // split by spaces: "A op B"
+      var parts = s.split(/\s+/);
+      if (parts.length !== 3) return null;
+      var a = parseInt(parts[0], 10);
+      var op = parts[1];
+      var b = parseInt(parts[2], 10);
+      if (Number.isNaN(a) || Number.isNaN(b)) return null;
+      return { a: a, b: b, op: op };
+    }
+
+    async function submitAnswer() {
+      if (!testId) return;
+      var val = parseInt(answerInput.value, 10);
+      if (Number.isNaN(val)) return;
+
+      var pq = parseCurrentQuestion();
+      if (!pq) return;
+
+      var payload = { a: pq.a, b: pq.b, answer: val, testType: currentTestType };
+      var res = await fetch('/api/math/test/' + testId + '/answer', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+
+      if (res.status === 410) { timeUp(); return; }
+      if (!res.ok) { alert('Submit failed.'); return; }
+
+      var r = await res.json();
+      total = r.total;
+      correct = r.correctCount;
+      incorrect = r.incorrectCount;
+      streak = r.streak;
+      updateScoreboard();
+      timerEl.textContent = 'Time ' + fmtSeconds(r.timeLeftSec);
+
+      if (r.correct) {
+        try { sfxCorrect.play(); } catch(_) {}
+        resultEl.textContent = 'Correct.';
+      } else {
+        try { sfxWrong.play(); } catch(_) {}
+        resultEl.textContent = 'Incorrect. Answer: ' + r.expected;
+      }
+
+      await loadQuestion();
+    }
+
+    async function finishTest(manual) {
+      if (!testId) return;
+      enableQA(false);
+      stopLocalTick();
+
+      var res = await fetch('/api/math/test/' + testId + '/finish', { method: 'POST' });
+      testId = null;
+      startBtn.disabled = false;
+      finishBtn.disabled = true;
+
+      if (!res.ok) {
+        resultEl.textContent = manual ? 'Finished.' : 'Time up.';
+        return;
+      }
+      var summary = await res.json();
+      resultEl.textContent =
+        (manual ? 'Finished' : 'Time up') +
+        ' - Total: ' + summary.total +
+        ', Correct: ' + summary.correctCount +
+        ', Incorrect: ' + summary.incorrectCount +
+        ', Avg: ' + (summary.avgSecPerQ || 0).toFixed(1) + 's/q';
+    }
+
+    function timeUp() {
+      finishTest(false);
+    }
+
+    // ----- Events -----
+    startBtn.addEventListener('click', startTest);
+    finishBtn.addEventListener('click', function () { finishTest(true); });
+    submitBtn.addEventListener('click', submitAnswer);
+    answerInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') submitAnswer();
     });
 
+    // ----- Init -----
     loadStudent();
 </script>
 </body>
