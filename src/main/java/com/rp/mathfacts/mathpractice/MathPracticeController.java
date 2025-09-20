@@ -21,8 +21,16 @@ public class MathPracticeController {
             case INTERMEDIATE -> 10;
             case ADVANCED -> 12;
         };
-        int a = 8; // temp, just doing 8s
+        int a = random.nextInt(2)+8;
         int b = random.nextInt(base) + 1;
+
+        if (random.nextBoolean())
+        {
+            var tmp = a;
+            a=b;
+            b=tmp;
+        }
+
 
         Question question = new Question(a, b, testType, level);
         return ResponseEntity.ok(question);
