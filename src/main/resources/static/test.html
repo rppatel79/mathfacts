@@ -72,6 +72,12 @@
     <p id="streak">Streak: 0</p>
 </div>
 
+<div id="report" class="box" style="display:none; margin-top:12px;">
+    <h3>Review</h3>
+    <div id="wrong-list"></div>
+    <div id="slow-list" style="margin-top:10px;"></div>
+</div>
+
 <!-- Optional sounds; safe to keep (no emojis in messages) -->
 <audio id="success-sound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
 <audio id="incorrect-sound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
@@ -84,6 +90,66 @@
       var m = Math.floor(s / 60), r = s % 60;
       return pad2(m) + ":" + pad2(r);
     }
+    function opFor(testType) {
+      switch (testType) {
+        case 'ADDITION': return '+';
+        case 'SUBTRACTION': return '-';
+        case 'MULTIPLICATION': return 'x';
+        case 'DIVISION': return '/';
+        default: return '?';
+      }
+    }
+
+    function msToSec(ms) { return (ms / 1000).toFixed(2) + 's'; }
+
+    function renderWrong(list) {
+      const container = document.getElementById('wrong-list');
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div class="muted">No wrong answers.</div>';
+        return;
+      }
+      const rows = list.map(item => {
+        const op = opFor(item.testType);
+        return `<tr>
+          <td>${item.a} ${op} ${item.b}</td>
+          <td>${item.expected}</td>
+          <td>${item.given}</td>
+          <td>${msToSec(item.timeMs)}</td>
+        </tr>`;
+      }).join('');
+      container.innerHTML = `
+        <div class="label">All wrong answers</div>
+        <table border="1" cellpadding="6" cellspacing="0">
+          <thead><tr><th>Problem</th><th>Expected</th><th>Given</th><th>Time</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    function renderSlow(list) {
+      const container = document.getElementById('slow-list');
+      if (!list || list.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+      const rows = list.map(item => {
+        const op = opFor(item.testType);
+        return `<tr>
+          <td>${item.a} ${op} ${item.b}</td>
+          <td>${item.correct ? 'correct' : 'wrong'}</td>
+          <td>${item.expected}</td>
+          <td>${item.given}</td>
+          <td>${msToSec(item.timeMs)}</td>
+        </tr>`;
+      }).join('');
+      container.innerHTML = `
+        <div class="label">Top slowest answers</div>
+        <table border="1" cellpadding="6" cellspacing="0">
+          <thead><tr><th>Problem</th><th>Result</th><th>Expected</th><th>Given</th><th>Time</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+
 
     // ----- Elements -----
     var titleEl = document.getElementById('title');
@@ -245,6 +311,7 @@
       timerEl.textContent = 'Time ' + fmtSeconds(q.timeLeftSec);
       answerInput.value = '';
       answerInput.focus();
+      qStartMs = performance.now();
     }
 
     function parseCurrentQuestion() {
@@ -268,10 +335,12 @@
       var pq = parseCurrentQuestion();
       if (!pq) return;
 
-      var payload = { a: pq.a, b: pq.b, answer: val, testType: currentTestType };
-      var res = await fetch('/api/math/test/' + testId + '/answer', {
+      var elapsedMs = qStartMs ? Math.round(performance.now() - qStartMs) : 0;
+
+      var payload = { a: pq.a, b: pq.b, answer: val, testType: currentTestType, elapsedMs: elapsedMs };
+      const res = await fetch('/api/math/test/' + testId + '/answer', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -318,6 +387,10 @@
         ', Correct: ' + summary.correctCount +
         ', Incorrect: ' + summary.incorrectCount +
         ', Avg: ' + (summary.avgSecPerQ || 0).toFixed(1) + 's/q';
+
+      renderWrong(summary.wrongAnswers || []);
+      renderSlow(summary.slowestAnswers || []);
+      document.getElementById('report').style.display = 'block';
     }
 
     function timeUp() {

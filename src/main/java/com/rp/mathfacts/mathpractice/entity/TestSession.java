@@ -17,11 +17,16 @@ public class TestSession {
     public int total = 0, correct = 0, incorrect = 0, streak = 0;
 
     public static class QLog {
-        public final int a, b, expected;
+        public final int a, b;
+        public final int expected;
+        public final int given;
         public final boolean correct;
         public final long elapsedMs;
-        public QLog(int a, int b, int expected, boolean correct, long elapsedMs){
-            this.a=a; this.b=b; this.expected=expected; this.correct=correct; this.elapsedMs=elapsedMs;
+
+        public QLog(int a, int b, int expected, int given, boolean correct, long elapsedMs) {
+            this.a = a; this.b = b;
+            this.expected = expected; this.given = given;
+            this.correct = correct; this.elapsedMs = elapsedMs;
         }
     }
     public final List<QLog> logs = new ArrayList<>();

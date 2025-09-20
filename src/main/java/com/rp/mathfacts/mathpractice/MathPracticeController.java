@@ -5,7 +5,6 @@ import com.rp.mathfacts.mathpractice.service.QuestionFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -55,8 +54,8 @@ public class MathPracticeController {
         s.total++;
         if (correct) { s.correct++; s.streak++; } else { s.incorrect++; s.streak = 0; }
 
-        // Optional: if you measure per-question time on the client, post it as well; here we just approximate 0.
-        s.logs.add(new TestSession.QLog(req.a(), req.b(), expected, correct, 0));
+        long elapsed = req.elapsedMs() == null ? 0L : Math.max(0L, req.elapsedMs());
+        s.logs.add(new TestSession.QLog(req.a(), req.b(), expected, req.answer(), correct, elapsed));
 
         return ResponseEntity.ok(new AnswerResponse(correct, expected, timeLeft, s.total, s.correct, s.incorrect, s.streak));
     }
@@ -66,14 +65,26 @@ public class MathPracticeController {
         var s = sessions.remove(testId);
         if (s == null) return ResponseEntity.notFound().build();
 
-        long totalMs = Duration.between(s.start, s.endsAt).toMillis();
-        // If ended early, estimate actual run time from logs if you tracked elapsedMs; otherwise use scheduled duration - remaining.
-        if (!s.logs.isEmpty()) {
-            long sum = s.logs.stream().mapToLong(l -> l.elapsedMs).sum();
-            totalMs = Math.max(sum, totalMs); // pick something sensible
-        }
+        long sumMs = s.logs.stream().mapToLong(l -> l.elapsedMs).sum();
+        long totalMs = sumMs > 0 ? sumMs : java.time.Duration.between(s.start, s.endsAt).toMillis();
         double avgSec = s.total == 0 ? 0.0 : (totalMs / 1000.0) / s.total;
-        return ResponseEntity.ok(new FinishResponse(s.total, s.correct, s.incorrect, avgSec));
+
+        // All wrong answers (preserve order asked)
+        var wrong = s.logs.stream()
+                .filter(l -> !l.correct)
+                .map(l -> new WrongAnswer(l.a, l.b, s.testType, l.expected, l.given, l.elapsedMs))
+                .toList();
+
+        // Top 5 slowest answers (by elapsedMs, descending)
+        var slowest = s.logs.stream()
+                .sorted(java.util.Comparator.comparingLong((TestSession.QLog l) -> l.elapsedMs).reversed())
+                .limit(5)
+                .map(l -> new SlowAnswer(l.a, l.b, s.testType, l.correct, l.expected, l.given, l.elapsedMs))
+                .toList();
+
+        return ResponseEntity.ok(new FinishResponse(
+                s.total, s.correct, s.incorrect, avgSec, wrong, slowest
+        ));
     }
 
     private TestSession getActive(UUID id) {
