@@ -15,7 +15,9 @@
         }
       ],
       "essential": true,
-      "environment": [],
+      "environment": [
+        { "name": "API_ORIGIN", "value": "http://mathfacts-api.riteshpripatel.com:8080" }
+      ],
       "secrets": [],
       "mountPoints": [],
       "volumesFrom": [],

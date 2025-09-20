@@ -27,6 +27,8 @@ services:
     image: mathfacts-web:local
     container_name: frontend
     restart: unless-stopped
+    environment:
+      - API_ORIGIN=http://backend:8080
     depends_on:
       - backend
     ports:
