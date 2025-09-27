@@ -2,19 +2,23 @@ package com.rp.mathfacts.mathpractice.entity;
 
 import com.rp.mathfacts.students.entity.Level;
 import com.rp.mathfacts.students.entity.TestType;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.*;
 import java.util.*;
 
+@Getter
 public class TestSession {
-    public final UUID id = UUID.randomUUID();
-    public final TestType testType;
-    public final Level level;
-    public final Instant start;
-    public final Instant endsAt;
-    public final int durationSec;
+    private final UUID id = UUID.randomUUID();
+    private final TestType testType;
+    private final Level level;
+    private final Instant start;
+    private final Instant endsAt;
+    private final int durationSec;
 
-    public int total = 0, correct = 0, incorrect = 0, streak = 0;
+    @Setter
+    private int total = 0, correct = 0, incorrect = 0, streak = 0;
 
     public static class QLog {
         public final int a, b;

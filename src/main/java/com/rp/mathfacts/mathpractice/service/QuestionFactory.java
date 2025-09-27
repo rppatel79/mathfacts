@@ -39,7 +39,7 @@ public class QuestionFactory {
                 if (a < b) { int t=a; a=b; b=t; } // non-negative
             }
             case MULTIPLICATION -> {
-                a = rnd.nextInt(2) + 7;  // TODO REMOVE ME
+                a = rnd.nextInt(8) + 1;// TODO 1-8
                 b = rnd.nextInt(cap) + 1;
                 if (rnd.nextBoolean())
                 {
