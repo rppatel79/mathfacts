@@ -54,7 +54,7 @@ public class MathPracticeController {
         s.setTotal(s.getTotal()+1);
         if (correct) {
             s.setCorrect(s.getCorrect()+1);
-            s.setStreak(s.getStreak());
+            s.setStreak(s.getStreak()+1);
         }
         else {
             s.setIncorrect(s.getIncorrect()+1);
