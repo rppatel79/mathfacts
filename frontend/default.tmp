@@ -1,7 +1,5 @@
 # /etc/nginx/default.tmp  (included inside http{})
 
-resolver 127.0.0.11 169.254.169.253 ipv6=off valid=10s;
-
 server {
   listen 80;
   server_name _;
