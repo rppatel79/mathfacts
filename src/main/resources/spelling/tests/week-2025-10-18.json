@@ -1,0 +1,81 @@
+{
+  "testId": "week-2025-09-27",
+  "items": [
+    {
+      "word":"address",
+      "sentence":"I can address which classroom I will attend in the morning."
+    },
+    {
+      "word":"blanket",
+      "sentence":"I have a very warm and fuzzy blanket."
+    },
+    {
+      "word":"captain",
+      "sentence":"Captain Jack Sparrow is my favorite captain."
+    },
+    {
+      "word":"explain",
+      "sentence":"I cannot explain why I'm so good a chess."
+    },
+    {
+      "word":"extreme",
+      "sentence":"The conditions of jumping out of the plane are extreme."
+    },
+    {
+      "word":"handsome",
+      "sentence":"I think I'm very handsome."
+    },
+    {
+      "word":"instead",
+      "sentence":"Instead of going to the playground, I go to the field."
+    },
+    {
+      "word":"landscape",
+      "sentence":"Tucson Arizona has a beautiful landscape."
+    },
+    {
+      "word":"message",
+      "sentence":"My message to everyone is to be kind (and try not to break your arm!)."
+    },
+    {
+      "word":"morsel",
+      "sentence":"There was a morsel of consolation for the British team."
+    },
+    {
+      "word":"necklace",
+      "sentence":"I have a necklace with an owl locket."
+    },
+    {
+      "word":"rescue",
+      "sentence":"I want to rescue someone."
+    },
+    {
+      "word":"sixteen",
+      "sentence":"There are sixteen bears in the north-east."
+    },
+    {
+      "word":"thirsty",
+      "sentence":"I am very thirsty."
+    },
+    {
+      "word":"welcome",
+      "sentence":"Everyone is welcome to my mom's classroom."
+    },
+    {
+      "word":"choose",
+      "sentence":"I choose the red jelly bean."
+    },
+    {
+      "word":"chose",
+      "sentence":"I chose the red jelly bean."
+    },
+    {
+      "word":"who’s",
+      "sentence":"Who's coming to the party?"
+    },
+    {
+      "word":"whose",
+      "sentence":"Whose book is this?"
+    }
+  ]
+}
